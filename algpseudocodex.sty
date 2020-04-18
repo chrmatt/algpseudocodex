@@ -1,0 +1,623 @@
+% Pseudocodex Algorithmic Style
+%
+% Copyright 2017 Christian Matt
+% Based on Szasz Janos' algpseudocode.sty
+%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{algpseudocodex}
+\RequirePackage{algorithmicx}
+\RequirePackage{etoolbox}
+\RequirePackage{fifo-stack}
+\RequirePackage{varwidth}
+\RequirePackage{linegoal}
+\RequirePackage{tikz}
+\usetikzlibrary{calc,fit,tikzmark}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Package options
+%
+\newbool{algpx@noEnd}
+\newbool{algpx@indLine}
+
+\DeclareOption{noend}{\setbool{algpx@noEnd}{true}}
+\DeclareOption{end}{\setbool{algpx@noEnd}{false}}
+\DeclareOption{noindline}{\setbool{algpx@indLine}{false}}
+\DeclareOption{indline}{\setbool{algpx@indLine}{true}}
+\ProcessOptions*
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Styles
+%
+\tikzset{%
+	defaultCodeBox/.style={draw},%
+	algpxIndentLine/.style={draw=lightgray,very thin}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Declarations
+%
+\algnewlanguage{pseudocodex}
+\alglanguage{pseudocodex}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for boxes around code
+%
+
+% \tikzmark is only available on next compilation; the following command immediately after using it
+\newcommand{\@tikzmarkNow}[2][]{\tikz[overlay,remember picture] \node[#1] (#2) {};}
+
+\long\def\@ifnodedefined#1#2#3{%
+	\@ifundefined{pgf@sh@ns@#1}{#3}{#2}%
+}
+
+\newlength{\algpx@codeBoxInnerSep}% distance between box and its content
+\newlength{\algpx@codeBoxSep}% distance between nested boxes
+\newlength{\algpx@codeBoxOuterSep}% additional space before and after box
+\newlength{\algpx@minIndDist}% minimum distance between start and end of indent line to draw line
+\setlength{\algpx@codeBoxInnerSep}{2pt}
+\setlength{\algpx@codeBoxSep}{3pt}
+\setlength{\algpx@codeBoxOuterSep}{1pt}
+
+\newbool{algpx@firstLine}
+\newbool{algpx@setNorth}
+\newbool{algpx@executeEndVarwidth}
+\newbool{algpx@adjustHeight}
+\newbool{algpx@restorePrevdepth}
+\newcounter{algpx@codeBoxCount}
+\newcounter{algpx@nestedCBoxCount}
+\newcounter{algpx@startedBoxesCount}
+\newcounter{algpx@endedBoxesCount}
+\newcounter{algpx@nestedBoxedStringCount}
+\newcounter{algpx@nestedBoxedStringMaxCount}
+\newlength{\algpx@oldPos}
+\newlength{\algpx@newPos}
+\newlength{\algpx@tmpLen}
+\newlength{\algpx@commentAddSpace}
+\FSCreate{algpx@startNewCodeBoxQueue}{0}
+\FSCreate{algpx@codeBoxStack}{0}
+\FSCreate{algpx@codeBoxStackTmp}{0}
+
+\newsavebox{\algpx@boxedStringBox}
+
+
+\newcommand{\algpx@drawCodeBox}[5]{%
+	\tikz[overlay,remember picture]{%
+		\node[inner sep=\algpx@codeBoxInnerSep,#1,fit={(pic cs:#2) (pic cs:#3) (pic cs:#4) (pic cs:#5)}] {};%
+	}%
+}
+
+% execute after \State, \If etc.
+\newcommand{\algpx@startCodeCommand}{%
+	\setbool{algpx@indJustEnded}{false}%
+	\setcounter{algpx@startedBoxesCount}{0}%
+	\setcounter{algpx@endedBoxesCount}{0}%
+	\setcounter{algpx@nestedBoxedStringMaxCount}{0}%
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}}}{%
+		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@startNewCodeBoxQueue}}%
+		\algpx@drawCodeBox{algpx@codeBoxStyle\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
+		\FSPop{algpx@startNewCodeBoxQueue}%
+		\setbool{algpx@setNorth}{true}%
+		\stepcounter{algpx@startedBoxesCount}%
+	}%
+	\algpx@setCodeBoxWest%
+	\setbool{algpx@firstLine}{false}%
+	\setbool{algpx@executeEndVarwidth}{true}%
+	\setlength{\algpx@commentAddSpace}{\dimexpr \leftmargin + \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
+	% create box from here to end of line
+	\begin{varwidth}[t]{\dimexpr \linewidth - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
+}
+
+% executed before \State, \If etc., i.e., at end of previous line
+% first argument 1 if after \EndIf etc. and noend
+\newcommand{\algpx@endCodeCommand}[1][0]{%
+	\ifbool{algpx@executeEndVarwidth}{%
+		\par\xdef\algpx@pdtemp{\the\prevdepth}% see https://tex.stackexchange.com/a/34982
+		\end{varwidth}\setbox0=\lastbox\usebox0%
+		\setbool{algpx@executeEndVarwidth}{false}%
+		\setbool{algpx@adjustHeight}{true}%
+		\setbool{algpx@restorePrevdepth}{true}%
+	}{}%
+	\ifbool{algpx@setNorth}{%
+		% todo: north should not be set again if highest element in current line is BoxedString
+		\algpx@setCodeBoxNorth{\the\ht0}% set north here shifted by height of current line
+		\setbool{algpx@setNorth}{false}%
+	}{}%
+	\algpx@setCodeBoxEast%
+	\ifbool{algpx@adjustHeight}{%
+		% todo: if highest or deepest element in current line is BoxedString, \ht0 or \dp0 should be adjusted for different sep values
+		\algpx@addBoxSpacing{\value{algpx@startedBoxesCount}}{\the\ht0}{\value{algpx@endedBoxesCount}}{\the\dp0}%
+		\setbool{algpx@adjustHeight}{false}%
+	}{}%
+	\ifboolexpr{bool{algpx@restorePrevdepth} and test{\ifstrequal{#1}{0}}}{%
+		\par\prevdepth\algpx@pdtemp%
+		\setbool{algpx@restorePrevdepth}{false}%
+	}{}%
+}
+
+% set algpx@codeBoxNorthMax of current box and all ancestors; argument is amount to shift up from current baseline
+\newcommand{\algpx@setCodeBoxNorth}[1]{%
+	\setcounter{algpx@nestedCBoxCount}{0}%
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}}}{%
+		\FSPush{algpx@codeBoxStackTmp}{\FSTop{algpx@codeBoxStack}}% copy stack to tmp
+		\@ifnodedefined{algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack}}{%
+			% get current position; shift according to nest-level to ensure nested boxes don't collide
+			\@tikzmarkNow[yshift=\dimexpr #1 + \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxNorthHere}%
+			% extract y-coordinate of previously stored north
+			\tikz[overlay,remember picture]{%
+				\pgfextracty{\algpx@oldPos}{\pgfpointanchor{algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack}}{center}}%
+				\pgfextracty{\algpx@newPos}{\pgfpointanchor{algpx@codeBoxNorthHere}{center}}%
+				\global\algpx@oldPos=\algpx@oldPos%
+				\global\algpx@newPos=\algpx@newPos%
+			}%
+			\ifdimcomp{\algpx@oldPos}{<}{\algpx@newPos}{%
+				% new y is greater than old one, so set it
+				\@tikzmarkNow[yshift=\dimexpr #1 + \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack}}%
+			}{%
+				\@tikzmarkNow{algpx@codeBoxNorthDummy}% set something to keep in sync
+			}%
+		}{%
+			\@tikzmarkNow[yshift=\dimexpr #1 + \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack}}%
+		}%
+		\FSPop{algpx@codeBoxStack}%
+		\stepcounter{algpx@nestedCBoxCount}%
+	}%
+	% restore stack from tmp
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStackTmp}}}}{%
+		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@codeBoxStackTmp}}%
+		\FSPop{algpx@codeBoxStackTmp}%
+	}%
+}
+
+
+% set algpx@codeBoxSouthMax of current box and all ancestors; argument is amount to shift down from current baseline
+\newcommand{\algpx@setCodeBoxSouth}[1]{%
+	\setcounter{algpx@nestedCBoxCount}{0}%
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}}}{%
+		\FSPush{algpx@codeBoxStackTmp}{\FSTop{algpx@codeBoxStack}}% copy stack to tmp
+		\@ifnodedefined{algpx@codeBoxSouthMax-\FSTop{algpx@codeBoxStack}}{%
+			% get current position; shift according to nest-level to ensure nested boxes don't collide
+			\@tikzmarkNow[yshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxSouthHere}%
+			% extract y-coordinate of previously stored south
+			\tikz[overlay,remember picture]{%
+				\pgfextracty{\algpx@oldPos}{\pgfpointanchor{algpx@codeBoxSouthMax-\FSTop{algpx@codeBoxStack}}{center}}%
+				\pgfextracty{\algpx@newPos}{\pgfpointanchor{algpx@codeBoxSouthHere}{center}}%
+				\global\algpx@oldPos=\algpx@oldPos%
+				\global\algpx@newPos=\algpx@newPos%
+			}%
+			\ifdimcomp{\algpx@oldPos}{>}{\algpx@newPos}{%
+				% new y is less than old one, so set it
+				\@tikzmarkNow[yshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxSouthMax-\FSTop{algpx@codeBoxStack}}%
+			}{%
+				\@tikzmarkNow{algpx@codeBoxSouthDummy}% set something to keep in sync
+			}%
+		}{%
+			\@tikzmarkNow[yshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxSouthMax-\FSTop{algpx@codeBoxStack}}%
+		}%
+		\FSPop{algpx@codeBoxStack}%
+		\stepcounter{algpx@nestedCBoxCount}%
+	}%
+	% restore stack from tmp
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStackTmp}}}}{%
+		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@codeBoxStackTmp}}%
+		\FSPop{algpx@codeBoxStackTmp}%
+	}%
+}
+
+% set algpx@codeBoxWestMax of current box and all ancestors; argument is amount to shift left from current position
+\newcommand{\algpx@setCodeBoxWest}[1][0pt]{%
+	\setcounter{algpx@nestedCBoxCount}{0}%
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}}}{%
+		\FSPush{algpx@codeBoxStackTmp}{\FSTop{algpx@codeBoxStack}}% copy stack to tmp
+		\@ifnodedefined{algpx@codeBoxWestMax-\FSTop{algpx@codeBoxStack}}{%
+			% get current position; shift according to nest-level to ensure nested boxes don't collide
+			\@tikzmarkNow[xshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxWestHere}%
+			% extract x-coordinate of previously stored west
+			\tikz[overlay,remember picture]{%
+				\pgfextractx{\algpx@oldPos}{\pgfpointanchor{algpx@codeBoxWestMax-\FSTop{algpx@codeBoxStack}}{center}}%
+				\pgfextractx{\algpx@newPos}{\pgfpointanchor{algpx@codeBoxWestHere}{center}}%
+				\global\algpx@oldPos=\algpx@oldPos%
+				\global\algpx@newPos=\algpx@newPos%
+			}%
+			\ifdimcomp{\algpx@oldPos}{>}{\algpx@newPos}{%
+				% new x is smaller than old one, so set it
+				\@tikzmarkNow[xshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxWestMax-\FSTop{algpx@codeBoxStack}}%
+			}{%
+				\@tikzmarkNow{algpx@codeBoxWestDummy}% set something to keep in sync
+			}%
+		}{%
+			\@tikzmarkNow[xshift=\dimexpr -#1 -\algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxWestMax-\FSTop{algpx@codeBoxStack}}%
+		}%
+		\FSPop{algpx@codeBoxStack}%
+		\stepcounter{algpx@nestedCBoxCount}%
+	}%
+	% restore stack from tmp
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStackTmp}}}}{%
+		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@codeBoxStackTmp}}%
+		\FSPop{algpx@codeBoxStackTmp}%
+	}%
+}
+
+% set algpx@codeBoxEastMax of current box and all ancestors
+\newcommand{\algpx@setCodeBoxEast}{%
+	\setcounter{algpx@nestedCBoxCount}{0}%
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}}}{%
+		\FSPush{algpx@codeBoxStackTmp}{\FSTop{algpx@codeBoxStack}}% copy stack to tmp
+		\@ifnodedefined{algpx@codeBoxEastMax-\FSTop{algpx@codeBoxStack}}{%
+			% get current position; shift according to nest-level to ensure nested boxes don't collide
+			\@tikzmarkNow[xshift=\dimexpr \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxEastHere}%
+			% extract x-coordinate of previously stored east
+			\tikz[overlay,remember picture]{%
+				\pgfextractx{\algpx@oldPos}{\pgfpointanchor{algpx@codeBoxEastMax-\FSTop{algpx@codeBoxStack}}{center}}%
+				\pgfextractx{\algpx@newPos}{\pgfpointanchor{algpx@codeBoxEastHere}{center}}%
+				\global\algpx@oldPos=\algpx@oldPos%
+				\global\algpx@newPos=\algpx@newPos%
+			}%
+			\ifdimcomp{\algpx@oldPos}{<}{\algpx@newPos}{%
+				% new x is greater than old one, so set it
+				\@tikzmarkNow[xshift=\dimexpr \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxEastMax-\FSTop{algpx@codeBoxStack}}%
+			}{%
+				\@tikzmarkNow{algpx@codeBoxEastDummy}% set something to keep in sync
+			}%
+		}{%
+			\@tikzmarkNow[xshift=\dimexpr \algpx@codeBoxSep * \value{algpx@nestedCBoxCount}\relax]{algpx@codeBoxEastMax-\FSTop{algpx@codeBoxStack}}%
+		}%
+		\FSPop{algpx@codeBoxStack}%
+		\stepcounter{algpx@nestedCBoxCount}%
+	}%
+	% restore stack from tmp
+	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStackTmp}}}}{%
+		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@codeBoxStackTmp}}%
+		\FSPop{algpx@codeBoxStackTmp}%
+	}%
+}
+
+\newcommand{\algpx@setBoxesToStoredMax}{%
+	\tikz[overlay,remember picture]{%
+		\tikzmark{algpx@codeBoxNorth-\FSTop{algpx@codeBoxStack}}{(algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack})}%
+		\tikzmark{algpx@codeBoxSouth-\FSTop{algpx@codeBoxStack}}{(algpx@codeBoxSouthMax-\FSTop{algpx@codeBoxStack})}%
+		\tikzmark{algpx@codeBoxWest-\FSTop{algpx@codeBoxStack}}{(algpx@codeBoxWestMax-\FSTop{algpx@codeBoxStack})}%
+		\tikzmark{algpx@codeBoxEast-\FSTop{algpx@codeBoxStack}}{(algpx@codeBoxEastMax-\FSTop{algpx@codeBoxStack})}%
+	}%
+}
+
+% add some space above and below box; more if several boxes are nested
+% first argument: number of boxes above
+% second argument: height of content
+% third argument: number of boxes below
+% fourth argument: depth of content
+\newcommand{\algpx@addBoxSpacing}[4]{%
+	\ifnumcomp{0}{<}{#1}{%
+		\rule{0pt}{\dimexpr #2 + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep + (\algpx@codeBoxSep * (#1 - 1))\relax}%
+	}{}%
+	\ifnumcomp{0}{<}{#3}{%
+		\rule[\dimexpr -#4 - \algpx@codeBoxInnerSep - \algpx@codeBoxOuterSep - (\algpx@codeBoxSep * (#3 - 1))\relax]{0pt}{\dimexpr #4 + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep + (\algpx@codeBoxSep * (#3 - 1))\relax}%
+	}{}%
+}
+
+% must be followed by \State, \If, \For etc.
+\newcommand{\BeginBox}[1][defaultCodeBox]{%
+	\FSUnshift{algpx@startNewCodeBoxQueue}{\thealgpx@codeBoxCount}% add to queue; processed by \algpx@startCodeCommand
+	%globally set tikz style (https://tex.stackexchange.com/a/47918)
+	\begingroup%
+		\globaldefs=1\relax%
+		\pgfqkeys{/tikz}{algpx@codeBoxStyle\thealgpx@codeBoxCount/.style={#1}}%
+	\endgroup%
+	\stepcounter{algpx@codeBoxCount}%
+}
+
+\newcommand{\EndBox}{%
+	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{%
+		\PackageError{algpseudocodex}{BeginBox must be followed by State, If, For, etc. Use BoxedString instead}{}%
+		\FSClear{algpx@startNewCodeBoxQueue}%
+	}{%
+		\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}{%
+			\unskip%
+			\ifbool{algpx@executeEndVarwidth}{%
+				\par\xdef\algpx@pdtemp{\the\prevdepth}% see https://tex.stackexchange.com/a/34982
+				\end{varwidth}\setbox0=\lastbox\usebox0%
+				\setbool{algpx@executeEndVarwidth}{false}%
+				\setbool{algpx@adjustHeight}{true}%
+				\setbool{algpx@restorePrevdepth}{true}%
+			}{}%
+			\ifbool{algpx@setNorth}{%
+				\algpx@setCodeBoxNorth{\the\ht0}% set north here shifted by height of current line
+				\setbool{algpx@setNorth}{false}%
+			}{}%
+			\algpx@setCodeBoxEast%
+			\algpx@setCodeBoxSouth{\the\dp0}% set south here shifted by depth of current line
+			%adjust stored prevdepth for ended boxes
+			\ifnumcomp{0}{<}{\value{algpx@endedBoxesCount}}{%
+				\edef\algpx@pdtemp{\dimexpr \algpx@pdtemp + \algpx@codeBoxSep \relax}%
+			}{%
+				\edef\algpx@pdtemp{\dimexpr \algpx@pdtemp + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep \relax}%
+			}%
+			\algpx@setBoxesToStoredMax%
+			\FSPop{algpx@codeBoxStack}%
+			\stepcounter{algpx@endedBoxesCount}%
+		}{%
+			\PackageError{algpseudocodex}{No box to end}{}%
+		}%
+	}%
+}
+
+\newcommand{\BoxedString}[2][defaultCodeBox]{%
+	\ifnumcomp{\value{algpx@nestedBoxedStringCount}}{=}{0}{%
+		\setcounter{algpx@nestedBoxedStringMaxCount}{0}% reset max count for new boxes
+	}{}%
+	\stepcounter{algpx@nestedBoxedStringCount}%
+	\ifnumcomp{\value{algpx@nestedBoxedStringMaxCount}}{<}{\value{algpx@nestedBoxedStringCount}}{%
+		\setcounter{algpx@nestedBoxedStringMaxCount}{\value{algpx@nestedBoxedStringCount}}%
+	}{}%
+	\algpx@drawCodeBox{#1}{algpx@codeBoxNorth-\thealgpx@codeBoxCount}{algpx@codeBoxWest-\thealgpx@codeBoxCount}{algpx@codeBoxEast-\thealgpx@codeBoxCount}{algpx@codeBoxSouth-\thealgpx@codeBoxCount}%
+	\FSPush{algpx@codeBoxStack}{\thealgpx@codeBoxCount}%
+	\stepcounter{algpx@codeBoxCount}%
+	\algpx@setCodeBoxWest%
+	\ifmmode%
+		% This works in equation but not in align / displaystyle etc. gets lost
+		\savebox{\algpx@boxedStringBox}{$\m@th#2$}%
+		\usebox{\algpx@boxedStringBox}%
+	\else%
+		\savebox{\algpx@boxedStringBox}{#2}%
+		\usebox{\algpx@boxedStringBox}%
+	\fi%
+	\algpx@setCodeBoxEast%
+	\algpx@setCodeBoxNorth{\the\ht\algpx@boxedStringBox}%
+	\algpx@setCodeBoxSouth{\the\dp\algpx@boxedStringBox}%
+	\algpx@setBoxesToStoredMax%
+	\FSPop{algpx@codeBoxStack}%
+	\addtocounter{algpx@nestedBoxedStringCount}{-1}% BoxedString ends here
+	\ifnumcomp{\value{algpx@nestedBoxedStringCount}}{=}{0}{%
+		\algpx@addBoxSpacing{\value{algpx@nestedBoxedStringMaxCount}}{\the\ht\algpx@boxedStringBox}{\value{algpx@nestedBoxedStringMaxCount}}{\the\dp\algpx@boxedStringBox}%
+	}{}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for indentation  lines
+%
+
+\newcounter{algpx@indentCount}
+\FSCreate{algpx@indentStack}{0}
+\newbool{algpx@indJustEnded} % true after end with noend
+\newcounter{algpx@justUsedIndentCount}
+\newlength{\algpx@indStartY}
+\newlength{\algpx@indEndY}
+\newlength{\algpx@indStartX} % x coordinate of indent line
+
+% start indented block
+\newcommand{\algpx@startIndent}{%
+	\ifbool{algpx@indLine}{%
+		\@tikzmarkNow{algpx@indentStart-\thealgpx@indentCount}%
+		\FSPush{algpx@indentStack}{\thealgpx@indentCount}%
+		\stepcounter{algpx@indentCount}%
+	}{}%
+}
+
+% end of indented block; optional argument 1 means that only interrupted by else
+\newcommand{\algpx@endIndent}[1][0]{%
+	\ifbool{algpx@indLine}{%
+		\ifbool{algpx@noEnd}{%
+			\setlength{\algpx@minIndDist}{1pt}%
+		}{%
+			\setlength{\algpx@minIndDist}{\dimexpr \baselineskip + 1ex \relax}%
+		}%
+		\@tikzmarkNow{algpx@indentEnd-\FSTop{algpx@indentStack}}%
+		\tikz[overlay,remember picture]{%
+			\pgfextractx{\algpx@indStartX}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
+			\ifbool{algpx@indJustEnded}{%
+				% use same coordinates as for previous end
+				\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEnd-\thealgpx@justUsedIndentCount}{center}}%
+				\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(\algpx@indStartX,\algpx@indEndY)+(0.12em,0ex)$) -- +(0.5em,0);%
+			}{%
+				% only draw if at least one line between start and end
+				\pgfextracty{\algpx@indStartY}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
+				\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEnd-\FSTop{algpx@indentStack}}{center}}%
+				\ifdimcomp{\algpx@indStartY-\algpx@minIndDist}{>}{\algpx@indEndY}{%
+					\ifboolexpr{bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
+						% x of end is at end of line, extract x of start and use that instead
+						\pgfextractx{\algpx@indStartX}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
+						% draw additional line to right if noend and line is not interrupted
+						\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(\algpx@indStartX,\algpx@indEndY)+(0.12em,0ex)$) -- +(0.5em,0);%
+					}{%
+						\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(algpx@indentEnd-\FSTop{algpx@indentStack})+(0.12em,2.0ex)$);%
+					}%
+				}{}%
+			}%
+		}%
+		\ifboolexpr{not bool{algpx@indJustEnded} and bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
+			\setbool{algpx@indJustEnded}{true}%
+			\setcounter{algpx@justUsedIndentCount}{\FSTop{algpx@indentStack}}%
+		}{}%
+		\FSPop{algpx@indentStack}%
+		\ifstrequal{#1}{1}{%
+			\algpx@startIndent% start new line if only interrupted
+		}{}%
+	}{}%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Keywords
+%
+\algnewcommand\algorithmicend{\textbf{end}}
+\algnewcommand\algorithmicdo{\textbf{do}}
+\algnewcommand\algorithmicwhile{\textbf{while}}
+\algnewcommand\algorithmicfor{\textbf{for}}
+\algnewcommand\algorithmicforall{\textbf{for all}}
+\algnewcommand\algorithmicloop{\textbf{loop}}
+\algnewcommand\algorithmicrepeat{\textbf{repeat}}
+\algnewcommand\algorithmicuntil{\textbf{until}}
+\algnewcommand\algorithmicprocedure{\textbf{procedure}}
+\algnewcommand\algorithmicfunction{\textbf{function}}
+\algnewcommand\algorithmicif{\textbf{if}}
+\algnewcommand\algorithmicthen{\textbf{then}}
+\algnewcommand\algorithmicelse{\textbf{else}}
+\algnewcommand\algorithmicrequire{\textbf{Require:}}
+\algnewcommand\algorithmicensure{\textbf{Ensure:}}
+\algnewcommand\algorithmicreturn{\textbf{return}}
+\algnewcommand\algorithmicoutput{\textbf{output}}
+\algnewcommand\textproc{\textsc}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Loops
+%
+\algdef{SE}[WHILE]{While}{EndWhile}[1]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicwhile\ #1\ \algorithmicdo%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicwhile%
+}
+\algdef{SE}[FOR]{For}{EndFor}[1]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicfor\ #1\ \algorithmicdo%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicfor%
+}
+\algdef{S}[FOR]{ForAll}[1]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicforall\ #1\ \algorithmicdo%
+}
+\algdef{SE}[LOOP]{Loop}{EndLoop}{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicloop%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicloop%
+}
+\algdef{SE}[REPEAT]{Repeat}{Until}{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicrepeat%
+}[1]{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicuntil\ #1%
+}
+\algdef{SE}[IF]{If}{EndIf}[1]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicif\ #1\ \algorithmicthen%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicif%
+}
+\algdef{C}[IF]{IF}{ElsIf}[1]{%
+	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse\ \algorithmicif\ #1\ \algorithmicthen%
+}
+\algdef{Ce}[ELSE]{IF}{Else}{EndIf}{%
+	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse%
+}
+\algdef{SE}[PROCEDURE]{Procedure}{EndProcedure}[2]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicprocedure\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicprocedure%
+}
+\algdef{SE}[FUNCTION]{Function}{EndFunction}[2]{%
+	\algpx@startIndent\algpx@startCodeCommand\algorithmicfunction\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
+}{%
+	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicfunction%
+}
+
+\ifbool{algpx@noEnd}{%
+	\algtext*{EndWhile}%
+	\algtext*{EndFor}%
+	\algtext*{EndLoop}%
+	\algtext*{EndIf}%
+	\algtext*{EndProcedure}%
+	\algtext*{EndFunction}%
+	%
+	\pretocmd{\EndWhile}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndFor}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndLoop}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndIf}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndProcedure}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
+}{}%
+
+\apptocmd{\State}{\algpx@startCodeCommand}{}{}
+
+\algrenewcomment[1]{\makebox[\dimexpr \algpx@commentAddSpace + \linegoal \relax][r]{$\triangleright$ #1}\ignorespaces}
+
+\pretocmd{\State}{\algpx@endCodeCommand}{}{}
+\pretocmd{\While}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndWhile}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\For}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndFor}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\ForAll}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Loop}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndLoop}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\Repeat}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Until}{\algpx@endCodeCommand}{}{}
+\pretocmd{\If}{\algpx@endCodeCommand}{}{}
+\pretocmd{\ElsIf}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Else}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndIf}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\Procedure}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndProcedure}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\Function}{\algpx@endCodeCommand}{}{}
+\pretocmd{\EndFunction}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Other declarations
+%
+
+% dirty hack: execute drawing in argument of item and rest of \algpx@startCodeCommand outside
+% argument: text in item[.]
+\newcommand{\algpx@drawInItem}[1]{%
+	\item[%
+		\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}}}{%
+			\FSPush{algpx@codeBoxStack}{\FSTop{algpx@startNewCodeBoxQueue}}%
+			\algpx@drawCodeBox{algpx@codeBoxStyle\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
+			\FSPop{algpx@startNewCodeBoxQueue}%
+			\stepcounter{algpx@startedBoxesCount}%
+		}%
+		#1%
+	]%
+	\setbool{algpx@indJustEnded}{false}%
+	\setcounter{algpx@startedBoxesCount}{0}%
+	\setcounter{algpx@endedBoxesCount}{0}%
+	\setcounter{algpx@nestedBoxedStringMaxCount}{0}%
+	\settowidth{\algpx@tmpLen}{#1}%
+	\algpx@setCodeBoxWest[\dimexpr \labelsep + \algpx@tmpLen \relax]%
+	\setlength{\algpx@commentAddSpace}{\dimexpr \algpx@tmpLen + \labelsep \relax}%
+	\setbool{algpx@firstLine}{false}%
+	\setbool{algpx@executeEndVarwidth}{true}%
+	\begin{varwidth}[t]{\dimexpr \linewidth - \labelsep - \algpx@tmpLen + \leftmargin \relax}%
+	\settoheight{\algpx@tmpLen}{#1}%
+	\rule{0pt}{\algpx@tmpLen}%
+}
+
+\algnewcommand\Require{%
+	\algpx@endCodeCommand%
+	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{\setbool{algpx@setNorth}{true}}{}%
+	\ifbool{algpx@firstLine}{%
+	}{%
+		\medskip%
+	}%
+	\algpx@drawInItem{\algorithmicrequire}%
+}
+
+\algnewcommand\Ensure{%
+	\algpx@endCodeCommand%
+	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{\setbool{algpx@setNorth}{true}}{}%
+	\algpx@drawInItem{\algorithmicensure}%
+}
+
+\algnewcommand\Return{\algorithmicreturn{} }
+\algnewcommand\Output{\algorithmicoutput{} }
+\algnewcommand\Call[2]{\textproc{#1}\ifstrempty{#2}{}{(#2)}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Execute at beginning and end of algorithmic environment
+\AtBeginEnvironment{algorithmic}{%
+	\setbool{algpx@firstLine}{true}%
+	\setbool{algpx@setNorth}{false}%
+	\setbool{algpx@executeEndVarwidth}{false}%
+	\setbool{algpx@adjustHeight}{false}%
+	\setbool{algpx@restorePrevdepth}{false}%
+	\setcounter{algpx@startedBoxesCount}{0}%
+	\setcounter{algpx@endedBoxesCount}{0}%
+}
+
+\AtEndEnvironment{algorithmic}{%
+	\algpx@endCodeCommand%
+	% Error checking
+	\ifboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@codeBoxStack}}} or test {\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}}}{%
+		\PackageError{algpseudocodex}{Some boxes have not ended}{}%
+	}{}%
+}
