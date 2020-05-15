@@ -83,7 +83,7 @@
 \newbool{algpx@executeEndVarwidth}
 \newbool{algpx@adjustHeight}
 \newbool{algpx@restorePrevdepth}
-\newcounter{algpx@codeBoxCount}
+\newcounter{algpx@codeBoxCount}% number of already created code boxes. Used to fill algpx@startNewCodeBoxQueue
 \newcounter{algpx@nestedCBoxCount}
 \newcounter{algpx@startedBoxesCount}
 \newcounter{algpx@endedBoxesCount}
@@ -93,13 +93,13 @@
 \newlength{\algpx@newPos}
 \newlength{\algpx@tmpLen}
 \newlength{\algpx@commentAddSpace}
-\FSCreate{algpx@startNewCodeBoxQueue}{0}
+\FSCreate{algpx@startNewCodeBoxQueue}{0}% queue of code boxes to be created on next \State, \If etc. Only stores index of box (0 is value of top if empty; should not be relevant)
 \FSCreate{algpx@codeBoxStack}{0}
 \FSCreate{algpx@codeBoxStackTmp}{0}
 
 \newsavebox{\algpx@boxedStringBox}
 
-
+% Draw a box. First parameter is style, others are coordinates (north, west, east, south)
 \newcommand{\algpx@drawCodeBox}[5]{%
 	\tikz[overlay,remember picture]{%
 		\node[inner sep=\algpx@codeBoxInnerSep,#1,fit={(pic cs:#2) (pic cs:#3) (pic cs:#4) (pic cs:#5)}] {};%
@@ -291,6 +291,8 @@
 	}%
 }
 
+% Set coordinates of box on top of algpx@codeBoxStack to maximal reported values.
+% This ensures, e.g., that the right edge of the box is after the longest line inside.
 \newcommand{\algpx@setBoxesToStoredMax}{%
 	\tikz[overlay,remember picture]{%
 		\tikzmark{algpx@codeBoxNorth-\FSTop{algpx@codeBoxStack}}{(algpx@codeBoxNorthMax-\FSTop{algpx@codeBoxStack})}%
@@ -310,11 +312,13 @@
 		\rule{0pt}{\dimexpr #2 + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep + (\algpx@codeBoxSep * (#1 - 1))\relax}%
 	}{}%
 	\ifnumcomp{0}{<}{#3}{%
-		\rule[\dimexpr -#4 - \algpx@codeBoxInnerSep - \algpx@codeBoxOuterSep - (\algpx@codeBoxSep * (#3 - 1))\relax]{0pt}{\dimexpr #4 + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep + (\algpx@codeBoxSep * (#3 - 1))\relax}%
+		\rule[\dimexpr -#4 - \algpx@codeBoxInnerSep - \algpx@codeBoxOuterSep - (\algpx@codeBoxSep * (#3 - 1))\relax]{0pt}{\dimexpr #4 + \algpx@codeBoxInnerSep + \algpx@codeBoxOuterSep + (\algpx@codeBoxSep * (#3 - 1))\relax}% negative offset equal to height to draw line down from baseline
 	}{}%
 }
 
-% must be followed by \State, \If, \For etc.
+% Begin a new code box here.
+% Must be followed by \State, \If, \For etc.
+% (optional) argument is style of box
 \newcommand{\BeginBox}[1][defaultCodeBox]{%
 	\FSUnshift{algpx@startNewCodeBoxQueue}{\thealgpx@codeBoxCount}% add to queue; processed by \algpx@startCodeCommand
 	%globally set tikz style (https://tex.stackexchange.com/a/47918)
@@ -325,6 +329,7 @@
 	\stepcounter{algpx@codeBoxCount}%
 }
 
+% End one open code box. Fails if no box open (i.e., if algpx@codeBoxStack is empty).
 \newcommand{\EndBox}{%
 	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{%
 		\PackageError{algpseudocodex}{BeginBox must be followed by State, If, For, etc. Use BoxedString instead}{}%
@@ -360,6 +365,9 @@
 	}%
 }
 
+% Draw box within a single line of code.
+% (Optional) first argument is style of the box.
+% Second argument is the string to print inside the box.
 \newcommand{\BoxedString}[2][defaultCodeBox]{%
 	\ifnumcomp{\value{algpx@nestedBoxedStringCount}}{=}{0}{%
 		\setcounter{algpx@nestedBoxedStringMaxCount}{0}% reset max count for new boxes
@@ -394,14 +402,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for indentation  lines
 %
-
 \newcounter{algpx@indentCount}
 \FSCreate{algpx@indentStack}{0}
-\newbool{algpx@indJustEnded} % true after end with noend
+\newbool{algpx@indJustEnded}% true after end with noend
 \newcounter{algpx@justUsedIndentCount}
 \newlength{\algpx@indStartY}
 \newlength{\algpx@indEndY}
-\newlength{\algpx@indStartX} % x coordinate of indent line
+\newlength{\algpx@indStartX}% x coordinate of indent line
 
 % start indented block
 \newcommand{\algpx@startIndent}{%
@@ -479,7 +486,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Loops
+% Loops, conditional statements, and functions
 %
 \algdef{SE}[WHILE]{While}{EndWhile}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicwhile\ #1\ \algorithmicdo%
@@ -542,13 +549,10 @@
 	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
 }{}%
 
-\apptocmd{\State}{\algpx@startCodeCommand}{}{}
-
-\algrenewcomment[1]{\makebox[\dimexpr \algpx@commentAddSpace + \linegoal \relax][r]{$\triangleright$ #1}\ignorespaces}
-
+% execute \algpx@endCodeCommand before \State, \If etc.
 \pretocmd{\State}{\algpx@endCodeCommand}{}{}
 \pretocmd{\While}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndWhile}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+\pretocmd{\EndWhile}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}% tell function whether we are using noEnd
 \pretocmd{\For}{\algpx@endCodeCommand}{}{}
 \pretocmd{\EndFor}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\ForAll}{\algpx@endCodeCommand}{}{}
@@ -564,6 +568,9 @@
 \pretocmd{\EndProcedure}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\Function}{\algpx@endCodeCommand}{}{}
 \pretocmd{\EndFunction}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+
+% execute \algpx@startCodeCommand after \State (this is done for loops etc. inside the definitions above)
+\apptocmd{\State}{\algpx@startCodeCommand}{}{}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -616,9 +623,12 @@
 \algnewcommand\Output{\algorithmicoutput{} }
 \algnewcommand\Call[2]{\textproc{#1}\ifstrempty{#2}{}{(#2)}}
 
+\algrenewcomment[1]{\makebox[\dimexpr \algpx@commentAddSpace + \linegoal \relax][r]{$\triangleright$ #1}\ignorespaces}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute at beginning and end of algorithmic environment
+%
 \AtBeginEnvironment{algorithmic}{%
 	\setbool{algpx@firstLine}{true}%
 	\setbool{algpx@setNorth}{false}%
