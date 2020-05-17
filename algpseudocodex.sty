@@ -21,6 +21,7 @@
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{algpseudocodex}
+\RequirePackage{kvoptions}
 \RequirePackage{algorithmicx}
 \RequirePackage{etoolbox}
 \RequirePackage{fifo-stack}
@@ -33,14 +34,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Package options
 %
-\newbool{algpx@noEnd}
-\newbool{algpx@indLine}
+\SetupKeyvalOptions{%
+	family=algpx,%
+	prefix=algpx@%
+}
 
-\DeclareOption{noend}{\setbool{algpx@noEnd}{true}}
-\DeclareOption{end}{\setbool{algpx@noEnd}{false}}
-\DeclareOption{noindline}{\setbool{algpx@indLine}{false}}
-\DeclareOption{indline}{\setbool{algpx@indLine}{true}}
-\ProcessOptions*
+\DeclareBoolOption[true]{noEnd}% don't print end if etc.
+\DeclareBoolOption[true]{indLines}% show indent guide lines
+\ProcessLocalKeyvalOptions*
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -417,7 +418,7 @@
 
 % start indented block
 \newcommand{\algpx@startIndent}{%
-	\ifbool{algpx@indLine}{%
+	\ifbool{algpx@indLines}{%
 		\@tikzmarkNow{algpx@indentStart-\thealgpx@indentCount}%
 		\FSPush{algpx@indentStack}{\thealgpx@indentCount}%
 		\stepcounter{algpx@indentCount}%
@@ -426,7 +427,7 @@
 
 % end of indented block; optional argument 1 means that only interrupted by else
 \newcommand{\algpx@endIndent}[1][0]{%
-	\ifbool{algpx@indLine}{%
+	\ifbool{algpx@indLines}{%
 		\ifbool{algpx@noEnd}{%
 			\setlength{\algpx@minIndDist}{1pt}%
 		}{%
