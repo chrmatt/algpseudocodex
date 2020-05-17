@@ -41,6 +41,11 @@
 
 \DeclareBoolOption[true]{noEnd}% don't print end if etc.
 \DeclareBoolOption[true]{indLines}% show indent guide lines
+\DeclareBoolOption[true]{italicComments}% italicise comments
+\DeclareBoolOption[true]{rightComments}% right justify comments
+\DeclareStringOption[$\triangleright$~]{beginComment}% print at beginning of comment
+\DeclareStringOption[]{endComment}% print at end of comment
+\DeclareStringOption[gray]{commentColor}% color of comments
 \ProcessLocalKeyvalOptions*
 
 
@@ -629,15 +634,30 @@
 \algnewcommand\Output{\algorithmicoutput{} }
 \algnewcommand\Call[2]{\textproc{#1}\ifstrempty{#2}{}{(#2)}}
 
-\algrenewcomment[1]{%
-	\settowidth{\algpx@tmpLen}{$\triangleright$ #1\ignorespaces}% set temp variable to width of comment
-	\setlength{\algpx@tmpLenA}{\linegoal}% set to remaining space on line
-	\addtolength{\algpx@tmpLenA}{\algpx@commentAddSpace}% add stored value to compensate for indentation
-	\ifdimcomp{\algpx@tmpLen}{<}{\algpx@tmpLenA}{% check whether comment fits on line
-		\makebox[\algpx@tmpLenA][r]{$\triangleright$ #1}\ignorespaces% make box and justify comment right inside
+% internal method to format comment
+\newcommand{\algpx@commentString}[1]{%
+	\ifbool{algpx@italicComments}{%
+		\textit{\textcolor{\algpx@commentColor}{\algpx@beginComment#1\algpx@endComment}}%
 	}{%
-		$\triangleright$ #1\ignorespaces% if it doesn't fit, just print normally, allowing line break
+		\textcolor{\algpx@commentColor}{\algpx@beginComment#1\algpx@endComment}%
 	}%
+}
+
+% redefine \Comment
+\algrenewcomment[1]{%
+	\ifbool{algpx@rightComments}{%
+		\settowidth{\algpx@tmpLen}{\algpx@commentString{#1}}% set temp variable to width of comment
+		\setlength{\algpx@tmpLenA}{\linegoal}% set to remaining space on line
+		\addtolength{\algpx@tmpLenA}{\algpx@commentAddSpace}% add stored value to compensate for indentation
+		\ifdimcomp{\algpx@tmpLen}{<}{\algpx@tmpLenA}{% check whether comment fits on line
+			\makebox[\algpx@tmpLenA][r]{\algpx@commentString{#1}}% make box and justify comment right inside
+		}{%
+			\algpx@commentString{#1}% if it doesn't fit, just print normally, allowing line break
+		}%
+	}{%
+		\algpx@commentString{#1}% just print normally if not right justified
+	}%
+	\ignorespaces%
 }%
 
 
