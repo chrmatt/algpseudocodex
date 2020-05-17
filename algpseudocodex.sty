@@ -91,7 +91,8 @@
 \newcounter{algpx@nestedBoxedStringMaxCount}
 \newlength{\algpx@oldPos}
 \newlength{\algpx@newPos}
-\newlength{\algpx@tmpLen}
+\newlength{\algpx@tmpLen}% length to be used for various things
+\newlength{\algpx@tmpLenA}% another tmp length
 \newlength{\algpx@commentAddSpace}
 \FSCreate{algpx@startNewCodeBoxQueue}{0}% queue of code boxes to be created on next \State, \If etc. Only stores index of box (0 is value of top if empty; should not be relevant)
 \FSCreate{algpx@codeBoxStack}{0}
@@ -320,6 +321,7 @@
 % Must be followed by \State, \If, \For etc.
 % (optional) argument is style of box
 \newcommand{\BeginBox}[1][defaultCodeBox]{%
+	\ignorespaces%	
 	\FSUnshift{algpx@startNewCodeBoxQueue}{\thealgpx@codeBoxCount}% add to queue; processed by \algpx@startCodeCommand
 	%globally set tikz style (https://tex.stackexchange.com/a/47918)
 	\begingroup%
@@ -327,10 +329,12 @@
 		\pgfqkeys{/tikz}{algpx@codeBoxStyle\thealgpx@codeBoxCount/.style={#1}}%
 	\endgroup%
 	\stepcounter{algpx@codeBoxCount}%
+	\ignorespaces%
 }
 
 % End one open code box. Fails if no box open (i.e., if algpx@codeBoxStack is empty).
 \newcommand{\EndBox}{%
+	\ignorespaces%
 	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{%
 		\PackageError{algpseudocodex}{BeginBox must be followed by State, If, For, etc. Use BoxedString instead}{}%
 		\FSClear{algpx@startNewCodeBoxQueue}%
@@ -363,6 +367,7 @@
 			\PackageError{algpseudocodex}{No box to end}{}%
 		}%
 	}%
+	\ignorespaces%
 }
 
 % Draw box within a single line of code.
@@ -623,7 +628,16 @@
 \algnewcommand\Output{\algorithmicoutput{} }
 \algnewcommand\Call[2]{\textproc{#1}\ifstrempty{#2}{}{(#2)}}
 
-\algrenewcomment[1]{\makebox[\dimexpr \algpx@commentAddSpace + \linegoal \relax][r]{$\triangleright$ #1}\ignorespaces}
+\algrenewcomment[1]{%
+	\settowidth{\algpx@tmpLen}{$\triangleright$ #1\ignorespaces}% set temp variable to width of comment
+	\setlength{\algpx@tmpLenA}{\linegoal}% set to remaining space on line
+	\addtolength{\algpx@tmpLenA}{\algpx@commentAddSpace}% add stored value to compensate for indentation
+	\ifdimcomp{\algpx@tmpLen}{<}{\algpx@tmpLenA}{% check whether comment fits on line
+		\makebox[\algpx@tmpLenA][r]{$\triangleright$ #1}\ignorespaces% make box and justify comment right inside
+	}{%
+		$\triangleright$ #1\ignorespaces% if it doesn't fit, just print normally, allowing line break
+	}%
+}%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
