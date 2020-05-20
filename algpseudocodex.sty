@@ -45,6 +45,8 @@
 \DeclareBoolOption[true]{rightComments}% right justify comments
 \DeclareStringOption[$\triangleright$~]{beginComment}% print at beginning of comment
 \DeclareStringOption[]{endComment}% print at end of comment
+\DeclareStringOption[$\triangleright$~]{beginLComment}% print at beginning of long comment
+\DeclareStringOption[~$\triangleleft$]{endLComment}% print at end of long comment
 \DeclareStringOption[gray]{commentColor}% color of comments
 \ProcessLocalKeyvalOptions*
 
@@ -97,6 +99,7 @@
 \newcounter{algpx@nestedBoxedStringMaxCount}
 \newlength{\algpx@oldPos}
 \newlength{\algpx@newPos}
+\newlength{\algpx@spaceAfterLine}% long comments are typeset in a box narrower than the line to leave space for end comment symbol This value is set by startCodecommandX to hold the width of that symbol
 \newlength{\algpx@tmpLen}% length to be used for various things
 \newlength{\algpx@tmpLenA}% another tmp length
 \newlength{\algpx@commentAddSpace}
@@ -115,6 +118,13 @@
 
 % execute after \State, \If etc.
 \newcommand{\algpx@startCodeCommand}{%
+	\algpx@startCodeCommandX{}{}%
+}
+
+% extended version of \algpx@startCodeCommand
+% first argument is printed before content
+% second argument is used to reserve space after contents (for end symbol of long comments)
+\newcommand{\algpx@startCodeCommandX}[2]{%
 	\setbool{algpx@indJustEnded}{false}%
 	\setcounter{algpx@startedBoxesCount}{0}%
 	\setcounter{algpx@endedBoxesCount}{0}%
@@ -130,8 +140,11 @@
 	\setbool{algpx@firstLine}{false}%
 	\setbool{algpx@executeEndVarwidth}{true}%
 	\setlength{\algpx@commentAddSpace}{\dimexpr \leftmargin + \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
-	% create box from here to end of line
-	\begin{varwidth}[t]{\dimexpr \linewidth - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
+	#1%
+	% create box from here to end of line, leaving space for #2
+	\settowidth{\algpx@tmpLen}{#1}%
+	\settowidth{\algpx@spaceAfterLine}{#2}% also remember this width for endCodeCommand
+	\begin{varwidth}[t]{\dimexpr \linewidth - \algpx@tmpLen - \algpx@spaceAfterLine - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
 }
 
 % executed before \State, \If etc., i.e., at end of previous line
@@ -143,6 +156,8 @@
 		\setbool{algpx@executeEndVarwidth}{false}%
 		\setbool{algpx@adjustHeight}{true}%
 		\setbool{algpx@restorePrevdepth}{true}%
+		\rule{\algpx@spaceAfterLine}{0pt}% reserve space remembered before to make sure boxes fit end comment
+		\setlength{\algpx@spaceAfterLine}{0pt}% only add this once
 	}{}%
 	\ifbool{algpx@setNorth}{%
 		% todo: north should not be set again if highest element in current line is BoxedString
@@ -353,6 +368,8 @@
 				\setbool{algpx@executeEndVarwidth}{false}%
 				\setbool{algpx@adjustHeight}{true}%
 				\setbool{algpx@restorePrevdepth}{true}%
+				\rule{\algpx@spaceAfterLine}{0pt}% reserve space remembered before to make sure boxes fit end comment
+				\setlength{\algpx@spaceAfterLine}{0pt}% only add this once
 			}{}%
 			\ifbool{algpx@setNorth}{%
 				\algpx@setCodeBoxNorth{\the\ht0}% set north here shifted by height of current line
@@ -634,13 +651,19 @@
 \algnewcommand\Output{\algorithmicoutput{} }
 \algnewcommand\Call[2]{\textproc{#1}\ifstrempty{#2}{}{(#2)}}
 
-% internal method to format comment
-\newcommand{\algpx@commentString}[1]{%
+%% internal methods to format comment
+% format according to comment format
+\newcommand{\algpx@commentFormat}[1]{%
 	\ifbool{algpx@italicComments}{%
-		\textit{\textcolor{\algpx@commentColor}{\algpx@beginComment#1\algpx@endComment}}%
+		\textit{\textcolor{\algpx@commentColor}{#1}}%
 	}{%
-		\textcolor{\algpx@commentColor}{\algpx@beginComment#1\algpx@endComment}%
+		\textcolor{\algpx@commentColor}{#1}%
 	}%
+}
+
+% get string for inline comment including begin and end markers
+\newcommand{\algpx@commentString}[1]{%
+	\algpx@commentFormat{\algpx@beginComment#1\algpx@endComment}%
 }
 
 % redefine \Comment
@@ -660,6 +683,21 @@
 	\ignorespaces%
 }%
 
+% Long comment starting on new line.
+% Can span several lines and in contrast to \Comment, never right justified.
+\algdef{SL}[LCOMMENT]{LComment}{0}[1]{%
+	\algpx@startCodeCommandX{\algpx@commentFormat{\algpx@beginLComment}}{\algpx@commentFormat{\algpx@endLComment}}%
+	\algpx@commentFormat{#1}% print actual comment
+	\settowidth{\algpx@tmpLen}{\algpx@commentFormat{\algpx@beginLComment}}% width of begin comment
+	\addtolength{\algpx@tmpLen}{\linegoal}% add remaining space on line
+	\addtolength{\algpx@tmpLen}{\algpx@commentAddSpace}% add stored value to compensate for indentation
+	\makebox[0pt][l]{% start box here that takes no space
+		\rule{\algpx@tmpLen}{0pt}% draw invisible rule from beginning of line until end of comment text
+		\algpx@commentFormat{\algpx@endLComment}% print end comment at the end
+	}%
+}%
+
+\pretocmd{\LComment}{\algpx@endCodeCommand}{}{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Execute at beginning and end of algorithmic environment
