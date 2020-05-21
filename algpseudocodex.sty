@@ -564,12 +564,13 @@
 	\algtext*{EndProcedure}%
 	\algtext*{EndFunction}%
 	%
-	\pretocmd{\EndWhile}{\algpx@endIndent}{}{}%
-	\pretocmd{\EndFor}{\algpx@endIndent}{}{}%
-	\pretocmd{\EndLoop}{\algpx@endIndent}{}{}%
-	\pretocmd{\EndIf}{\algpx@endIndent}{}{}%
-	\pretocmd{\EndProcedure}{\algpx@endIndent}{}{}%
-	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
+	% end indent line after (not before), to get correct y position for multiline text in last command
+	\apptocmd{\EndWhile}{\algpx@endIndent}{}{}%
+	\apptocmd{\EndFor}{\algpx@endIndent}{}{}%
+	\apptocmd{\EndLoop}{\algpx@endIndent}{}{}%
+	\apptocmd{\EndIf}{\algpx@endIndent}{}{}%
+	\apptocmd{\EndProcedure}{\algpx@endIndent}{}{}%
+	\apptocmd{\EndFunction}{\algpx@endIndent}{}{}%
 }{}%
 
 % execute \algpx@endCodeCommand before \State, \If etc.
