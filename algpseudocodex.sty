@@ -55,8 +55,8 @@
 % Styles
 %
 \tikzset{%
-	defaultCodeBox/.style={draw},%
-	algpxIndentLine/.style={draw=lightgray,very thin}%
+	algpxDefaultBox/.style={draw},%
+	algpxIndentLine/.style={draw=gray,very thin}%
 }
 
 
@@ -338,7 +338,7 @@
 % Begin a new code box here.
 % Must be followed by \State, \If, \For etc.
 % (optional) argument is style of box
-\newcommand{\BeginBox}[1][defaultCodeBox]{%
+\newcommand{\BeginBox}[1][algpxDefaultBox]{%
 	\ignorespaces%	
 	\FSUnshift{algpx@startNewCodeBoxQueue}{\thealgpx@codeBoxCount}% add to queue; processed by \algpx@startCodeCommand
 	%globally set tikz style (https://tex.stackexchange.com/a/47918)
@@ -391,7 +391,7 @@
 % Draw box within a single line of code.
 % (Optional) first argument is style of the box.
 % Second argument is the string to print inside the box.
-\newcommand{\BoxedString}[2][defaultCodeBox]{%
+\newcommand{\BoxedString}[2][algpxDefaultBox]{%
 	\ifnumcomp{\value{algpx@nestedBoxedStringCount}}{=}{0}{%
 		\setcounter{algpx@nestedBoxedStringMaxCount}{0}% reset max count for new boxes
 	}{}%
