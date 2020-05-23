@@ -66,11 +66,6 @@
 \algnewlanguage{pseudocodex}
 \alglanguage{pseudocodex}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Macros for boxes around code
-%
-
 % \tikzmark is only available on next compilation; the following command immediately after using it
 \newcommand{\@tikzmarkNow}[2][]{\tikz[overlay,remember picture] \node[#1] (#2) {};}
 
@@ -82,6 +77,15 @@
 \newlength{\algpx@codeBoxSep}% distance between nested boxes
 \newlength{\algpx@codeBoxOuterSep}% additional space before and after box
 \newlength{\algpx@minIndDist}% minimum distance between start and end of indent line to draw line
+\newlength{\algpx@oldPos}
+\newlength{\algpx@newPos}
+\newlength{\algpx@tmpLen}% length to be used for various things
+\newlength{\algpx@tmpLenA}% another tmp length
+\newlength{\algpx@commentAddSpace}
+\newlength{\algpx@indStartY}
+\newlength{\algpx@indEndY}
+\newlength{\algpx@indStartX}% x coordinate of indent line
+
 \setlength{\algpx@codeBoxInnerSep}{2pt}
 \setlength{\algpx@codeBoxSep}{3pt}
 \setlength{\algpx@codeBoxOuterSep}{1pt}
@@ -91,23 +95,28 @@
 \newbool{algpx@executeEndVarwidth}
 \newbool{algpx@adjustHeight}
 \newbool{algpx@restorePrevdepth}
+\newbool{algpx@indJustEnded}% true after end with noend
+
 \newcounter{algpx@codeBoxCount}% number of already created code boxes. Used to fill algpx@startNewCodeBoxQueue
 \newcounter{algpx@nestedCBoxCount}
 \newcounter{algpx@startedBoxesCount}
 \newcounter{algpx@endedBoxesCount}
 \newcounter{algpx@nestedBoxedStringCount}
 \newcounter{algpx@nestedBoxedStringMaxCount}
-\newlength{\algpx@oldPos}
-\newlength{\algpx@newPos}
-\newlength{\algpx@tmpLen}% length to be used for various things
-\newlength{\algpx@tmpLenA}% another tmp length
-\newlength{\algpx@commentAddSpace}
+\newcounter{algpx@indentCount}
+\newcounter{algpx@justUsedIndentCount}
+
 \FSCreate{algpx@startNewCodeBoxQueue}{0}% queue of code boxes to be created on next \State, \If etc. Only stores index of box (0 is value of top if empty; should not be relevant)
 \FSCreate{algpx@codeBoxStack}{0}
 \FSCreate{algpx@codeBoxStackTmp}{0}
+\FSCreate{algpx@indentStack}{0}
 
 \newsavebox{\algpx@boxedStringBox}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Macros for boxes around code
+%
 % Draw a box. First parameter is style, others are coordinates (north, west, east, south)
 \newcommand{\algpx@drawCodeBox}[5]{%
 	\tikz[overlay,remember picture]{%
@@ -371,7 +380,13 @@
 				\setbool{algpx@setNorth}{false}%
 			}{}%
 			\algpx@setCodeBoxEast%
-			\algpx@setCodeBoxSouth{\the\dp0}% set south here shifted by depth of current line
+			\ifbool{algpx@indJustEnded}{%
+				\algpx@setCodeBoxSouth{0pt}% set south here, don't shift after end with noEnd
+				% add space after boxes. Otherwise done by endCodeCommand, but this is not executed after End with noEnd
+				\algpx@addBoxSpacing{\value{algpx@startedBoxesCount}}{0pt}{\numexpr \value{algpx@endedBoxesCount} + 1 \relax}{0pt}%
+			}{%
+				\algpx@setCodeBoxSouth{\the\dp0}% set south here shifted by depth of current line
+			}%
 			%adjust stored prevdepth for ended boxes
 			\ifnumcomp{0}{<}{\value{algpx@endedBoxesCount}}{%
 				\edef\algpx@pdtemp{\dimexpr \algpx@pdtemp + \algpx@codeBoxSep \relax}%
@@ -425,14 +440,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for indentation  lines
 %
-\newcounter{algpx@indentCount}
-\FSCreate{algpx@indentStack}{0}
-\newbool{algpx@indJustEnded}% true after end with noend
-\newcounter{algpx@justUsedIndentCount}
-\newlength{\algpx@indStartY}
-\newlength{\algpx@indEndY}
-\newlength{\algpx@indStartX}% x coordinate of indent line
-
 % start indented block
 \newcommand{\algpx@startIndent}{%
 	\ifbool{algpx@indLines}{%
@@ -473,10 +480,13 @@
 				}{}%
 			}%
 		}%
-		\ifboolexpr{not bool{algpx@indJustEnded} and bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
-			\setbool{algpx@indJustEnded}{true}%
-			\setcounter{algpx@justUsedIndentCount}{\FSTop{algpx@indentStack}}%
-		}{}%
+	}{}%
+	% set indJustEnded even if indLines are not drawn; also used for EndBox
+	\ifboolexpr{not bool{algpx@indJustEnded} and bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
+		\setbool{algpx@indJustEnded}{true}%
+		\setcounter{algpx@justUsedIndentCount}{\FSTop{algpx@indentStack}}%
+	}{}%
+	\ifbool{algpx@indLines}{%
 		\FSPop{algpx@indentStack}%
 		\ifstrequal{#1}{1}{%
 			\algpx@startIndent% start new line if only interrupted
@@ -514,12 +524,12 @@
 \algdef{SE}[WHILE]{While}{EndWhile}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicwhile\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicwhile%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicwhile%
 }
 \algdef{SE}[FOR]{For}{EndFor}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicfor\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicfor%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicfor%
 }
 \algdef{S}[FOR]{ForAll}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicforall\ #1\ \algorithmicdo%
@@ -527,17 +537,17 @@
 \algdef{SE}[LOOP]{Loop}{EndLoop}{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicloop%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicloop%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicloop%
 }
 \algdef{SE}[REPEAT]{Repeat}{Until}{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicrepeat%
 }[1]{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicuntil\ #1%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicuntil\ #1%
 }
 \algdef{SE}[IF]{If}{EndIf}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicif\ #1\ \algorithmicthen%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicif%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicif%
 }
 \algdef{C}[IF]{IF}{ElsIf}[1]{%
 	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse\ \algorithmicif\ #1\ \algorithmicthen%
@@ -548,12 +558,12 @@
 \algdef{SE}[PROCEDURE]{Procedure}{EndProcedure}[2]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicprocedure\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicprocedure%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicprocedure%
 }
 \algdef{SE}[FUNCTION]{Function}{EndFunction}[2]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicfunction\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@setCodeBoxWest\algorithmicend\ \algorithmicfunction%
+	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicfunction%
 }
 
 \ifbool{algpx@noEnd}{%
