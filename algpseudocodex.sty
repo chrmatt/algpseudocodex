@@ -586,22 +586,33 @@
 % execute \algpx@endCodeCommand before \State, \If etc.
 \pretocmd{\State}{\algpx@endCodeCommand}{}{}
 \pretocmd{\While}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndWhile}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}% tell function whether we are using noEnd
 \pretocmd{\For}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndFor}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\ForAll}{\algpx@endCodeCommand}{}{}
 \pretocmd{\Loop}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndLoop}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\Repeat}{\algpx@endCodeCommand}{}{}
 \pretocmd{\Until}{\algpx@endCodeCommand}{}{}
 \pretocmd{\If}{\algpx@endCodeCommand}{}{}
 \pretocmd{\ElsIf}{\algpx@endCodeCommand}{}{}
 \pretocmd{\Else}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndIf}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\Procedure}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndProcedure}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
 \pretocmd{\Function}{\algpx@endCodeCommand}{}{}
-\pretocmd{\EndFunction}{\algpx@endCodeCommand[\ifbool{algpx@noEnd}{1}{0}]}{}{}
+
+% for end commands that may not be printed, tell endCodeCommand whether we are using noEnd
+\ifbool{algpx@noEnd}{%
+	\pretocmd{\EndWhile}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndFor}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndLoop}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndIf}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndFunction}{\algpx@endCodeCommand[1]}{}{}%
+}{%
+	\pretocmd{\EndWhile}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndFor}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndLoop}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndIf}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndFunction}{\algpx@endCodeCommand[0]}{}{}%
+}%
 
 % execute \algpx@startCodeCommand after \State (this is done for loops etc. inside the definitions above)
 \apptocmd{\State}{\algpx@startCodeCommand}{}{}
