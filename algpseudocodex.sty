@@ -43,6 +43,7 @@
 \DeclareBoolOption[true]{indLines}% show indent guide lines
 \DeclareBoolOption[true]{italicComments}% italicise comments
 \DeclareBoolOption[true]{rightComments}% right justify comments
+\DeclareBoolOption[true]{spaceRequire}% adds vertical space before \Require if not in first line
 \DeclareStringOption[$\triangleright$~]{beginComment}% print at beginning of comment
 \DeclareStringOption[]{endComment}% print at end of comment
 \DeclareStringOption[$\triangleright$~]{beginLComment}% print at beginning of long comment
@@ -651,10 +652,9 @@
 \algnewcommand\Require{%
 	\algpx@endCodeCommand%
 	\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}{\setbool{algpx@setNorth}{true}}{}%
-	\ifbool{algpx@firstLine}{%
-	}{%
+	\ifboolexpr{bool{algpx@spaceRequire} and not bool{algpx@firstLine}}{%
 		\medskip%
-	}%
+	}{}%
 	\algpx@drawInItem{\algorithmicrequire}%
 }
 
