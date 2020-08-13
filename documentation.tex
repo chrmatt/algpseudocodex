@@ -22,6 +22,7 @@
 \usepackage[margin=1.0in]{geometry}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{algpseudocodex}
 
 \usepackage[colorlinks,allcolors=blue!70!black]{hyperref}
 \usepackage[capitalise,nameinlink,noabbrev,compress]{cleveref}
@@ -37,8 +38,228 @@
 	This package allows typesetting pseudocode in \LaTeX. It is based on \texttt{algpseudocode} from the \texttt{algorithmicx} package and uses the same syntax, but adds several new features and improvements. Notable features include customizable indent guide lines and the ability to draw boxes around parts of the code for highlighting differences. This package also has better support for long code lines spanning several lines and improved comments.
 \end{abstract}
 
-\section{Introduction}
-Todo
+\section{Basic Usage}
+To use the package, load it in your preamble:
+\begin{verbatim}
+	\usepackage{algpseudocodex}
+\end{verbatim}
 
+Basic usage is identical to \texttt{algpseudocode} from the \texttt{algorithmicx} package. Pseudocode written for that package should also be compatible with \texttt{algpseudocodex}.
+
+\subsection{Algorithmic Block}
+Pseudocode can be typeset inside a algorithmic blocks:
+\begin{verbatim}
+	\begin{algorithmic}[line numbering]
+	    ...
+	\end{algorithmic}
+\end{verbatim}
+The optional argument specifies how lines are numbered. $0$ means no numbering, $n > 0$ means every $n$th line gets a number. The default is $0$, i.e., no line numbers will be typeset if no optional argument is provided.
+
+\subsection{Simple Statements and Commands}
+Statements start with \verb|\State|. The command \verb|\Statex| can be used to start a new line that does not get a new line number.
+
+The commands \verb|\Return| and \verb|\Output| can be used for return values of functions and outputs. They do not start a new line on their own, so they need to be used together with \verb|\State|.
+
+The \verb|\Call| command is used for procedure calls. It takes two arguments: The first one is the name of the procedure and the second one are the arguments.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\begin{algorithmic}[1]
+		    \State first line
+		    \Statex continuing first line
+		    \State \Call{Proc}{a1, a2}
+		    \State \Output Hello World!
+		\end{algorithmic}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}[1]
+		\State first line
+		\Statex continuing first line
+		\State \Call{Proc}{a1, a2}
+		\State \Output Hello World!
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{Blocks}
+Blocks are used for loops, conditional statements, and functions. Blocks can also be nested within other blocks.
+
+\subsubsection{While Loop}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\While{condition}
+		    \State body
+		\EndWhile
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\While{condition}
+		    \State body
+		\EndWhile
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsubsection{For Loop}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\For{$n = 1, \dots, 10$}
+		    \State body
+		\EndFor
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\For{$n = 1, \dots, 10$}
+		    \State body
+		\EndFor
+	\end{algorithmic}
+\end{minipage}
+
+\subsubsection{For-All Loop}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\ForAll{$n \in \{1, \dots, 10\}$}
+		    \State body
+		\EndFor
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\ForAll{$n \in \{1, \dots, 10\}$}
+		    \State body
+		\EndFor
+	\end{algorithmic}
+\end{minipage}
+
+\subsubsection{Loop}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\Loop
+		    \State body
+		\EndLoop
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\Loop
+		    \State body
+		\EndLoop
+	\end{algorithmic}
+\end{minipage}
+
+\subsubsection{Repeat-Until Loop}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\Repeat
+		    \State body
+		\Until{$n > 10$}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\Repeat
+		    \State body
+		\Until{$n > 10$}
+	\end{algorithmic}
+\end{minipage}
+
+\subsubsection{If Statement}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\If{condition}
+		    \State body
+		\ElsIf{condition}
+		    \State body
+		\Else
+		    \State body
+		\EndIf
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\If{condition}
+		    \State body
+		\ElsIf{condition}
+		    \State body
+		\Else
+		    \State body
+		\EndIf
+	\end{algorithmic}
+\end{minipage}
+
+\bigskip
+The \verb|\ElsIf| and \verb|\Else| parts are optional.
+
+
+\subsubsection{Procedure}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\Procedure{name}{parameters}
+		    \State body
+		\EndProcedure
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\Procedure{name}{parameters}
+		    \State body
+		\EndProcedure
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsubsection{Function}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\Function{name}{parameters}
+		    \State body
+		\EndFunction
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\Function{name}{parameters}
+		    \State body
+		\EndFunction
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{Require and Ensure}
+To specify conditions on the inputs and outputs of an algorithm, \verb|\Require| and \verb|\Ensure| can be used.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\begin{algorithmic}[1]
+		    \Require $x \in \{0,1\}$
+		    \Ensure $y \in \{1,2\}$
+		    \State $y \gets x+1$
+		    \State \Return $y$
+		\end{algorithmic}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}[1]
+		\Require $x \in \{0,1\}$
+		\Ensure $y \in \{1,2\}$
+		\State $y \gets x+1$
+		\State \Return $y$
+	\end{algorithmic}
+\end{minipage}
 
 \end{document}
