@@ -450,12 +450,12 @@
 	}{}%
 }
 
-% end of indented block; optional argument 1 means that only interrupted by else
+% end of indented block; optional argument 1 means that only interrupted by else, 2 means ended with until
 \newcommand{\algpx@endIndent}[1][0]{%
 	\ifbool{algpx@indLines}{%
-		\ifbool{algpx@noEnd}{%
-			\setlength{\algpx@minIndDist}{1pt}%
-		}{%
+		\ifboolexpr{bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
+			\setlength{\algpx@minIndDist}{1ex}% set mininum drawing distance to 1ex if ending without text
+		}{% otherwise, factor in additional line for end, else, or until
 			\setlength{\algpx@minIndDist}{\dimexpr \baselineskip + 1ex \relax}%
 		}%
 		\@tikzmarkNow{algpx@indentEnd-\FSTop{algpx@indentStack}}%
@@ -543,7 +543,7 @@
 \algdef{SE}[REPEAT]{Repeat}{Until}{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicrepeat%
 }[1]{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicuntil\ #1%
+	\algpx@endIndent[2]\algpx@startCodeCommand\algorithmicuntil\ #1%
 }
 \algdef{SE}[IF]{If}{EndIf}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicif\ #1\ \algorithmicthen%
