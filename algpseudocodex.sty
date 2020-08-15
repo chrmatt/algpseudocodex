@@ -702,8 +702,13 @@
 \algdef{SL}[LCOMMENT]{LComment}{0}[1]{%
 	\algpx@startCodeCommandX{\algpx@commentFormat{\algpx@beginLComment}}{\algpx@commentFormat{\algpx@endLComment}}%
 	\algpx@commentFormat{#1}% print actual comment
-	\tabto{\linewidth}% go to end of line
-	\algpx@commentFormat{\algpx@endLComment}% print end comment at the end
+	\tabto{\CurrentLineWidth}% this saves current position in \TabPrevPos and fixes spacing up to here
+	\setlength{\algpx@tmpLen}{\dimexpr \linewidth - \TabPrevPos \relax}% set to remaining space on line
+	\makebox[0pt][l]{% start box here that takes no space (otherwise impacts spacing of text before)
+		\rule{\algpx@tmpLen}{0pt}% draw invisible rule from beginning of line until end of comment text
+		\algpx@commentFormat{\algpx@endLComment}% print end comment at the end
+		\algpx@setCodeBoxEast% since this takes 0 space, we have to set east of code box here explicitly
+	}%
 }%
 
 \pretocmd{\LComment}{\algpx@endCodeCommand}{}{}
