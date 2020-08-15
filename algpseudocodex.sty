@@ -26,7 +26,7 @@
 \RequirePackage{etoolbox}
 \RequirePackage{fifo-stack}
 \RequirePackage{varwidth}
-\RequirePackage{linegoal}
+\RequirePackage{tabto}
 \RequirePackage{tikz}
 \usetikzlibrary{calc,fit,tikzmark}
 
@@ -82,7 +82,6 @@
 \newlength{\algpx@newPos}
 \newlength{\algpx@tmpLen}% length to be used for various things
 \newlength{\algpx@tmpLenA}% another tmp length
-\newlength{\algpx@commentAddSpace}
 \newlength{\algpx@indStartY}
 \newlength{\algpx@indEndY}
 \newlength{\algpx@indStartX}% x coordinate of indent line
@@ -148,7 +147,6 @@
 	\algpx@setCodeBoxWest%
 	\setbool{algpx@firstLine}{false}%
 	\setbool{algpx@executeEndVarwidth}{true}%
-	\setlength{\algpx@commentAddSpace}{\dimexpr \leftmargin + \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
 	#1%
 	% create box from here to end of line, leaving space for #2
 	\settowidth{\algpx@tmpLen}{#1}%
@@ -641,7 +639,6 @@
 	\setcounter{algpx@nestedBoxedStringMaxCount}{0}%
 	\settowidth{\algpx@tmpLen}{#1}%
 	\algpx@setCodeBoxWest[\dimexpr \labelsep + \algpx@tmpLen \relax]%
-	\setlength{\algpx@commentAddSpace}{\dimexpr \algpx@tmpLen + \labelsep \relax}%
 	\setbool{algpx@firstLine}{false}%
 	\setbool{algpx@executeEndVarwidth}{true}%
 	\begin{varwidth}[t]{\dimexpr \linewidth - \labelsep - \algpx@tmpLen + \leftmargin \relax}%
@@ -687,14 +684,10 @@
 \algrenewcomment[1]{%
 	\ifbool{algpx@rightComments}{%
 		\settowidth{\algpx@tmpLen}{\algpx@commentString{#1}}% set temp variable to width of comment
-		\setlength{\algpx@tmpLenA}{\linegoal}% set to remaining space on line
-		\addtolength{\algpx@tmpLenA}{\algpx@commentAddSpace}% add stored value to compensate for indentation
-		\ifdimcomp{\algpx@tmpLen}{<}{\algpx@tmpLenA}{% check whether comment fits on line
-			\makebox[0pt][l]{% start box here that takes no space (otherwise impacts spacing of text before)
-				\rule{\dimexpr \algpx@tmpLenA - \algpx@tmpLen \relax}{0pt}% draw invisible rule to right justify text
-				\algpx@commentString{#1}% print comment
-				\algpx@setCodeBoxEast% since this takes 0 space, we have to set east of code box here explicitly
-			}%
+		\tabto{\CurrentLineWidth}% this saves current position in \TabPrevPos and fixes spacing up to here
+		\ifdimcomp{\algpx@tmpLen}{<}{\dimexpr \linewidth - \TabPrevPos \relax}{% check whether comment fits on line
+			\tabto{\dimexpr \linewidth - \algpx@tmpLen \relax}% move position to right justify text
+			\algpx@commentString{#1}% print comment
 		}{%
 			\algpx@commentString{#1}% if it doesn't fit, just print normally, allowing line break
 		}%
@@ -709,14 +702,8 @@
 \algdef{SL}[LCOMMENT]{LComment}{0}[1]{%
 	\algpx@startCodeCommandX{\algpx@commentFormat{\algpx@beginLComment}}{\algpx@commentFormat{\algpx@endLComment}}%
 	\algpx@commentFormat{#1}% print actual comment
-	\settowidth{\algpx@tmpLen}{\algpx@commentFormat{\algpx@beginLComment}}% width of begin comment
-	\addtolength{\algpx@tmpLen}{\linegoal}% add remaining space on line
-	\addtolength{\algpx@tmpLen}{\algpx@commentAddSpace}% add stored value to compensate for indentation
-	\makebox[0pt][l]{% start box here that takes no space (otherwise impacts spacing of text before)
-		\rule{\algpx@tmpLen}{0pt}% draw invisible rule from beginning of line until end of comment text
-		\algpx@commentFormat{\algpx@endLComment}% print end comment at the end
-		\algpx@setCodeBoxEast% since this takes 0 space, we have to set east of code box here explicitly
-	}%
+	\tabto{\linewidth}% go to end of line
+	\algpx@commentFormat{\algpx@endLComment}% print end comment at the end
 }%
 
 \pretocmd{\LComment}{\algpx@endCodeCommand}{}{}
