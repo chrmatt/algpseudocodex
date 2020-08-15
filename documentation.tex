@@ -262,4 +262,35 @@ To specify conditions on the inputs and outputs of an algorithm, \verb|\Require|
 	\end{algorithmic}
 \end{minipage}
 
+
+\subsection{Comments}
+There are two ways to typeset code comments: The command \verb|\Comment| can be used to add shorts comments to the end of the current line. The command \verb|\LComment| can be used to typeset long comments that can span multiple lines. Comments with \verb|\LComment| start on a new line.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\begin{algorithmic}[1]
+		    \State $x \gets y^2$
+		    \LComment{The next two lines
+		        increment both $x$ and $y$.}
+		    \State $x \gets x + 1$
+		    \Comment{Increment $x$.}
+		    \State $y \gets y + 1$
+		    \Comment{Increment $y$.}
+		\end{algorithmic}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}[1]
+		\State $x \gets y^2$
+		\LComment{The next two lines
+			increment both $x$ and $y$.}
+		\State $x \gets x + 1$
+		\Comment{Increment $x$.}
+		\State $y \gets y + 1$
+		\Comment{Increment $y$.}
+	\end{algorithmic}
+\end{minipage}
+
 \end{document}
