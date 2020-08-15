@@ -293,4 +293,70 @@ There are two ways to typeset code comments: The command \verb|\Comment| can be 
 	\end{algorithmic}
 \end{minipage}
 
+
+\section{Boxes}
+A unique feature of the \texttt{algpseudocodex} package is the ability to draw boxes around pieces of code. There are two different methods to do so: One for drawing boxes around multiple lines of code, and another one for drawing a box around a string on a single line of code.
+
+\subsection{Boxes Around Multiple Lines of Code}
+The command \verb|\BeginBox[style]| is used to set the beginning of the box. The optional argument determines the style of the drawn box. The boxes are drawn using TikZ, so any TikZ style can be used. The default style can be changed as described in \cref{todo}.
+The command \verb|\EndBox| is used to set the end of the last started box. Boxes can be nested arbitrarily, but every \verb|\BeginBox| needs a matching \verb|\EndBox|.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\begin{algorithmic}
+		    \BeginBox
+		        \State first line
+		        \BeginBox[fill=yellow]
+		            \State second line
+		            \State another line
+		        \EndBox
+		    \EndBox
+		    \BeginBox[draw=blue,dashed]
+		        \State last line
+		    \EndBox
+		\end{algorithmic}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\BeginBox
+			\State first line
+			\BeginBox[fill=yellow]
+				\State second line
+				\State another line
+			\EndBox
+		\EndBox
+		\BeginBox[draw=blue,dashed]
+			\State last line
+		\EndBox
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{Boxes Inside Single Line}
+The command \verb|\BoxedString[style]{text}| is used to typeset text with a box around it. The optional argument determines the style of the box, as in \verb|\BeginBox|. The default style is the same as for \verb|\BeginBox|.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{verbatim}
+		\begin{algorithmic}
+		    \State first line
+		    \State second line with
+		    \BoxedString[fill=yellow]{box}
+		    \State last line
+		\end{algorithmic}
+	\end{verbatim}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\begin{algorithmic}
+		\State first line
+		\State second line with
+		\BoxedString[fill=yellow]{box}
+		\State last line
+	\end{algorithmic}
+\end{minipage}
+
 \end{document}
