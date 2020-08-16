@@ -359,4 +359,249 @@ The command \verb|\BoxedString[style]{text}| is used to typeset text with a box 
 	\end{algorithmic}
 \end{minipage}
 
+
+\section{Package Options}
+When loading \texttt{algpseudocodex} the options describe in this section can be set. They syntax for setting \verb|option1| to \verb|value1| and \verb|option2| to \verb|value2| is:
+\begin{verbatim}
+	\usepackage[option1=value1,option2=value2]{algpseudocodex}
+\end{verbatim}
+
+\subsection{noEnd}
+\begin{description}
+	\item[possible values:] \verb|true|, \verb|false|
+	\item[default:] \verb|true|
+\end{description}
+If \verb|false|, the end of blocks are marked with the expression ``end'' followed by the name of the block.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|noEnd=false|:
+	\begin{algorithmic}
+		\makeatletter
+		\setbool{algpx@noEnd}{false}%
+		\algtext{EndIf}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicif%
+			\algpx@startIndent% \EndIf ends another indent. Start fake one here to handle that.
+		}
+		\makeatother
+		\If{$x > 0$}
+			\State $x \gets x - 1$
+		\EndIf
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|noEnd=true|:
+	\begin{algorithmic}
+		\If{$x > 0$}
+			\State $x \gets x - 1$
+		\EndIf
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{indLines}
+\begin{description}
+	\item[possible values:] \verb|true|, \verb|false|
+	\item[default:] \verb|true|
+\end{description}
+If \verb|true|, indent guide lines are drawn.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|indLines=false|:
+	\begin{algorithmic}
+		\makeatletter
+		\setbool{algpx@indLines}{false}%
+		\makeatother
+		\If{$x > 0$}
+			\State $x \gets x - 1$
+		\EndIf
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|indLines=true|:
+	\begin{algorithmic}
+		\If{$x > 0$}
+			\State $x \gets x - 1$
+		\EndIf
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{spaceRequire}
+\begin{description}
+	\item[possible values:] \verb|true|, \verb|false|
+	\item[default:] \verb|true|
+\end{description}
+If \verb|true|, vertical space is added before every \verb|\Require| except the one on the first line. This is useful for specifying different behaviors depending on the provided input.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|spaceRequire=false|:
+	\begin{algorithmic}
+		\makeatletter
+		\setbool{algpx@spaceRequire}{false}%
+		\makeatother
+		\Require $x \in \{0,1\}$
+		\State \Return $x$
+		\Require $x \in \{1,2\}$
+		\State \Return $x-1$
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|spaceRequire=true|:
+	\begin{algorithmic}
+		\Require $x \in \{0,1\}$
+		\State \Return $x$
+		\Require $x \in \{1,2\}$
+		\State \Return $x-1$
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{italicComments}
+\begin{description}
+	\item[possible values:] \verb|true|, \verb|false|
+	\item[default:] \verb|true|
+\end{description}
+If \verb|true|, all comments are typeset in italic font. If \verb|false|, comments are typeset in roman font.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|italicComments=false|:
+	\begin{algorithmic}
+		\makeatletter
+		\setbool{algpx@italicComments}{false}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|italicComments=true|:
+	\begin{algorithmic}
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{rightComments}
+\begin{description}
+	\item[possible values:] \verb|true|, \verb|false|
+	\item[default:] \verb|true|
+\end{description}
+If \verb|true|, comments typeset with \verb|\Comment| are right justified on the current line. If a comment does not fit on the current line, no justification is applied. If \verb|false|, all comments are typeset right after the end of the current line.
+
+Does not affect long comments typeset with \verb|\LComment|.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|rightComments=false|:
+	\begin{algorithmic}
+		\makeatletter
+		\setbool{algpx@rightComments}{false}%
+		\makeatother
+		\LComment{No effect on long comments.}
+		\State $x \gets 0$ \Comment{Short comment.}
+		\State $x \gets x^2$ \Comment{Does not fit on the current line and is thus not justified.}
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|rightComments=true|:
+	\begin{algorithmic}
+		\LComment{No effect on long comments.}
+		\State $x \gets 0$ \Comment{Short comment.}
+		\State $x \gets x^2$ \Comment{Does not fit on the current line and is thus not justified.}
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{commentColor}
+\begin{description}
+	\item[possible values:] Any color that can be used in \verb|\textcolor|.
+	\item[default:] \verb|gray|
+\end{description}
+Defines the color in which comments are typeset.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|commentColor=black|:
+	\begin{algorithmic}
+		\makeatletter
+		\renewcommand{\algpx@commentColor}{black}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|commentColor=blue|:
+	\begin{algorithmic}
+		\makeatletter
+		\renewcommand{\algpx@commentColor}{blue}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+
+
+\subsection{beginComment and endComment}
+\begin{description}
+	\item[possible values:] Any string that can be typeset in text mode.
+	\item[default:] \verb|$\triangleright$~| and (empty)
+\end{description}
+Used to indicate the beginning and end of comments typeset with \verb|\Comment|, respectively.
+
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|beginComment=//~|:
+	\begin{algorithmic}
+		\makeatletter
+		\renewcommand{\algpx@beginComment}{//~}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|beginComment=/*~|, \verb|endComment=~*/|:
+	\begin{algorithmic}
+		\makeatletter
+		\renewcommand{\algpx@beginComment}{/*~}%
+		\renewcommand{\algpx@endComment}{~*/}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+
+\subsection{beginLComment and endLComment}
+\begin{description}
+	\item[possible values:] Any string that can be typeset in text mode.
+	\item[default:] \verb|$\triangleright$~| and \verb|~$\triangleleft$|
+\end{description}
+Used to indicate the beginning and end of long comments typeset with \verb|\LComment|, respectively.
+\subsubsection*{Example}
+\begin{minipage}[t]{0.45\textwidth}
+	\verb|beginLComment=/*~|, \verb|endLComment=~*/|:
+	\begin{algorithmic}
+		\makeatletter
+		\renewcommand{\algpx@beginLComment}{/*~}%
+		\renewcommand{\algpx@endLComment}{~*/}%
+		\makeatother
+		\LComment{Long comment.}
+		\State $x \gets 0$ \Comment{Short comment.}
+	\end{algorithmic}
+\end{minipage}
+
+
+
 \end{document}
