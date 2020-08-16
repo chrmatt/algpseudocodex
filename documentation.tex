@@ -629,4 +629,48 @@ Boxes are drawn using TikZ and consequently any TikZ style can be used. To set t
 The default style is \verb|draw|.
 
 
+\subsection{Changing Keywords}
+As in the \texttt{algorithmicx} package, keywords can be renamed using the syntax:
+\begin{verbatim}
+	\algrenewcommand\keyword{new name}
+\end{verbatim}
+The following keywords can be customized:
+\begin{itemize}
+	\item \verb|\algorithmicend|
+	\hfill Default: \verb|\textbf{end}|
+	\item \verb|\algorithmicdo|
+	\hfill Default: \verb|\textbf{do}|
+	\item \verb|\algorithmicwhile|
+	\hfill Default: \verb|\textbf{while}|
+	\item \verb|\algorithmicfor|
+	\hfill Default: \verb|\textbf{for}|
+	\item \verb|\algorithmicforall|
+	\hfill Default: \verb|\textbf{for all}|
+	\item \verb|\algorithmicloop|
+	\hfill Default: \verb|\textbf{loop}|
+	\item \verb|\algorithmicrepeat|
+	\hfill Default: \verb|\textbf{repeat}|
+	\item \verb|\algorithmicuntil|
+	\hfill Default: \verb|\textbf{until}|
+	\item \verb|\algorithmicprocedure|
+	\hfill Default: \verb|\textbf{procedure}|
+	\item \verb|\algorithmicfunction|
+	\hfill Default: \verb|\textbf{function}|
+	\item \verb|\algorithmicif|
+	\hfill Default: \verb|\textbf{if}|
+	\item \verb|\algorithmicthen|
+	\hfill Default: \verb|\textbf{then}|
+	\item \verb|\algorithmicelse|
+	\hfill Default: \verb|\textbf{else}|
+	\item \verb|\algorithmicrequire|
+	\hfill Default: \verb|\textbf{Require:}|
+	\item \verb|\algorithmicensure|
+	\hfill Default: \verb|\textbf{Ensure:}|
+	\item \verb|\algorithmicreturn|
+	\hfill Default: \verb|\textbf{return}|
+	\item \verb|\algorithmicoutput|
+	\hfill Default: \verb|\textbf{output}|
+\end{itemize}
+
+
 \end{document}
