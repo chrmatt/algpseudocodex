@@ -298,7 +298,7 @@ There are two ways to typeset code comments: The command \verb|\Comment| can be 
 A unique feature of the \texttt{algpseudocodex} package is the ability to draw boxes around pieces of code. There are two different methods to do so: One for drawing boxes around multiple lines of code, and another one for drawing a box around a string on a single line of code.
 
 \subsection{Boxes Around Multiple Lines of Code}
-The command \verb|\BeginBox[style]| is used to set the beginning of the box. The optional argument determines the style of the drawn box. The boxes are drawn using TikZ, so any TikZ style can be used. The default style can be changed as described in \cref{todo}.
+The command \verb|\BeginBox[style]| is used to set the beginning of the box. The optional argument determines the style of the drawn box. The boxes are drawn using TikZ, so any TikZ style can be used. The default style can be changed as described in \cref{sec:defBoxStyle}.
 The command \verb|\EndBox| is used to set the end of the last started box. Boxes can be nested arbitrarily, but every \verb|\BeginBox| needs a matching \verb|\EndBox|.
 
 \subsubsection*{Example}
@@ -404,7 +404,7 @@ If \verb|false|, the end of blocks are marked with the expression ``end'' follow
 	\item[possible values:] \verb|true|, \verb|false|
 	\item[default:] \verb|true|
 \end{description}
-If \verb|true|, indent guide lines are drawn.
+If \verb|true|, indent guide lines are drawn. The style of the lines can be customized as described in \cref{sec:indStyle}.
 
 \subsubsection*{Example}
 \begin{minipage}[t]{0.45\textwidth}
@@ -602,6 +602,31 @@ Used to indicate the beginning and end of long comments typeset with \verb|\LCom
 	\end{algorithmic}
 \end{minipage}
 
+
+\section{Customization}
+\subsection{Style of Indent Guide Lines}\label{sec:indStyle}
+Indent guide lines are drawn using TikZ and consequently any TikZ style can be used. To set the style, use:
+\begin{verbatim}
+	\tikzset{algpxIndentLine/.style={style}}
+\end{verbatim}
+The default style is \verb|draw=gray,very thin|.
+
+\subsubsection*{Example}
+\verb|algpxIndentLine/.style={draw=blue,dashed}|:
+\begin{algorithmic}
+	\tikzset{algpxIndentLine/.style={draw=blue,dashed}}
+	\If{$x > 0$}
+		\State $x \gets x - 1$
+	\EndIf
+\end{algorithmic}
+
+
+\subsection{Default Style of Boxes}\label{sec:defBoxStyle}
+Boxes are drawn using TikZ and consequently any TikZ style can be used. To set the default style, use:
+\begin{verbatim}
+	\tikzset{algpxDefaultBox/.style={style}}
+\end{verbatim}
+The default style is \verb|draw|.
 
 
 \end{document}
