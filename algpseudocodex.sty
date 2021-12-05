@@ -1,5 +1,5 @@
 %% algpseudocodex.sty
-%% Copyright 2017, 2020 Christian Matt
+%% Copyright 2017, 2020-2021 Christian Matt
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3
@@ -127,6 +127,12 @@
 % execute after \State, \If etc.
 \newcommand{\algpx@startCodeCommand}{%
 	\algpx@startCodeCommandX{}{}%
+}
+
+% execute before printing end if etc.
+\newcommand{\algpx@startEndBlockCommand}{%
+	% add space for indentation because of how ALG@nested is computed
+	\algpx@startCodeCommandX{}{\hspace*{\algorithmicindent}}%
 }
 
 % extended version of \algpx@startCodeCommand
@@ -523,12 +529,12 @@
 \algdef{SE}[WHILE]{While}{EndWhile}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicwhile\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicwhile%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicwhile%
 }
 \algdef{SE}[FOR]{For}{EndFor}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicfor\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicfor%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicfor%
 }
 \algdef{S}[FOR]{ForAll}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicforall\ #1\ \algorithmicdo%
@@ -536,17 +542,17 @@
 \algdef{SE}[LOOP]{Loop}{EndLoop}{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicloop%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicloop%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicloop%
 }
 \algdef{SE}[REPEAT]{Repeat}{Until}{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicrepeat%
 }[1]{%
-	\algpx@endIndent[2]\algpx@startCodeCommand\algorithmicuntil\ #1%
+	\algpx@endIndent[2]\algpx@startEndBlockCommand\algorithmicuntil\ #1%
 }
 \algdef{SE}[IF]{If}{EndIf}[1]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicif\ #1\ \algorithmicthen%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicif%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicif%
 }
 \algdef{C}[IF]{IF}{ElsIf}[1]{%
 	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse\ \algorithmicif\ #1\ \algorithmicthen%
@@ -557,12 +563,12 @@
 \algdef{SE}[PROCEDURE]{Procedure}{EndProcedure}[2]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicprocedure\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicprocedure%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicprocedure%
 }
 \algdef{SE}[FUNCTION]{Function}{EndFunction}[2]{%
 	\algpx@startIndent\algpx@startCodeCommand\algorithmicfunction\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicfunction%
+	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicfunction%
 }
 
 \ifbool{algpx@noEnd}{%
