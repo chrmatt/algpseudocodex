@@ -1,5 +1,5 @@
 %% algpseudocodex.sty
-%% Copyright 2017, 2020-2021 Christian Matt
+%% Copyright 2017, 2020-2022 Christian Matt
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3
@@ -20,7 +20,7 @@
 % Based on Szasz Janos' algpseudocode.sty
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{algpseudocodex}[2021-12-05 v1.0.1 pseudocode typesetting]
+\ProvidesPackage{algpseudocodex}[2022-10-07 v1.0.2 pseudocode typesetting]
 \RequirePackage{kvoptions}
 \RequirePackage{algorithmicx}
 \RequirePackage{etoolbox}
@@ -465,7 +465,7 @@
 		\@tikzmarkNow{algpx@indentEnd-\FSTop{algpx@indentStack}}%
 		\tikz[overlay,remember picture]{%
 			\pgfextractx{\algpx@indStartX}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
-			\ifbool{algpx@indJustEnded}{%
+			\ifboolexpr{bool{algpx@indJustEnded} and test{\ifstrequal{#1}{0}}}{%
 				% use same coordinates as for previous end
 				\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEnd-\thealgpx@justUsedIndentCount}{center}}%
 				\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(\algpx@indStartX,\algpx@indEndY)+(0.12em,0ex)$) -- +(0.5em,0);%
