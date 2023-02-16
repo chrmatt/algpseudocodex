@@ -1,0 +1,740 @@
+%\documentclass[a4paper,twocolumn]{article}
+\documentclass[a4paper]{article}
+\usepackage{amsmath}
+\usepackage{etoolbox}
+\usepackage{multicol}
+
+\newbool{noEnd}
+\setbool{noEnd}{true}
+%\setbool{noEnd}{false}
+
+\ifbool{noEnd}{%
+	\usepackage[noEnd=true]{../algpseudocodex}
+}{
+	\usepackage[noEnd=false]{../algpseudocodex}
+}
+
+\begin{document}
+	\section{Test Indent Guide Lines}
+	\subsection{Basic Tests}
+	This is some text before the algorithm starts to test how it indents. This is some text before the algorithm starts to test how it indents.
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$X > 0$} no additional line
+		\EndIf
+		\While{$x$}\EndWhile
+		\If{$a_{q_q} > 0$}
+			\State a
+			\State a
+			\State a
+		\EndIf
+		\If{$a > 0$}
+			\State a
+		\ElsIf{$b > 0$}
+			\State b
+		\ElsIf{$c > 0$}
+		\Else
+			\State d
+		\EndIf
+		\If{There is a really long line in the if condition, then this line is split over two lines}
+			\State a
+			\If{$x > 0$}
+				\State $a_{q_{q_{q_q}}}$
+			\EndIf
+		\EndIf
+		\Repeat
+			\State $x \gets x - 1$
+		\Until{$x^{2^{2^{2^{2^2}}}} = 0$}
+		\State some line
+		\Procedure{AnotherProcedure}{$x, y, S$}
+			\State This is a really long line that is broken up into two lines within the same line. $q_{q_{q_{q_q}}}$
+		\EndProcedure
+		\Procedure{SomeProcedure}{$x,y$}
+			\State $x \gets y+1$
+			\Repeat
+				\State $x \gets 2xy$
+			\Until{$x > 1000$}
+		\EndProcedure
+		\State some line
+		\Procedure{AnotherProcedure}{$x, y, S$}
+			\State $x \gets x+y$
+			\For{$z \in S$}
+				\State This is a really long line that is broken up into two lines within the same line.
+			\EndFor
+		\EndProcedure
+	\end{algorithmic}
+	
+	\newpage
+	\subsection{Test Page Breaks}
+	This is some text before the algorithm starts to test how it indents.\footnote{This is a footnote.}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\If{$c > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+				\EndIf
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\ifbool{noEnd}{
+					\State a
+				}{}
+				\State This is a very long line to test how page break interact with line breaks in lines.
+				\State $x^{x^{x^2}}$ la la la la la
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\If{$d > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State This an extremely long line that does not fit on a single line so it must be broken up.
+					\State a
+					\State a
+					\State a
+					\ifbool{noEnd}{
+						\State a
+					}{}
+					\State a
+					\State $q_{q_{q_q}}$
+				\EndIf
+				\State a
+				\State $q_{q_{q_q}}$
+				\State a
+				\State a
+				\State a
+				\State a
+				\If{$x > 0$}
+					\State a
+					\If{$x > 0$}
+						\State This an extremely long line that does not fit on a single line so it must be broken up.
+					\EndIf
+				\EndIf
+			\EndIf
+			\State some line here
+		\EndIf
+		%\State last line
+    \end{algorithmic}
+
+	\newpage
+	\subsection{Indentation Starts on Last Line}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\If{$c > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+				\EndIf
+			\EndIf
+		\EndIf
+	\end{algorithmic}
+
+	\newpage
+	\subsection{Indentation Starts on First Line}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\If{$c > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+				\EndIf
+			\EndIf
+		\EndIf
+	\end{algorithmic}
+
+	\newpage
+	\subsection{Indentation Ends on First Line}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\ifbool{noEnd}{
+				\State a
+			}{}
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\If{$c > 0$}
+					\If{$d > 0$}
+						\State a
+					\ElsIf{$e > 0$}
+						\State a
+						\State a
+					\EndIf
+				\EndIf
+			\EndIf
+		\EndIf
+	\end{algorithmic}
+
+	\newpage
+	\subsection{Indentation Ends on Last Line}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\ifbool{noEnd}{
+					\State a
+					\State a
+					\State a
+				}{}
+				\State a
+				\State a
+				\If{$c > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+				\EndIf
+			\EndIf
+		\EndIf
+	\end{algorithmic}
+	One line after algorithm.
+
+	\newpage
+	\subsection{Page Break on EndIf}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$d > 0$}
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\ifbool{noEnd}{%
+					\State a
+				}{}%
+				\State a
+				\State q
+			\EndIf
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+		\EndIf
+    \end{algorithmic}
+
+	\newpage
+	\subsection{Page Starts with LComment}
+	\begin{algorithmic}[1]
+		\State first line
+		\If{$a > 0$}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\LComment{This is a comment.}
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+			\If{$b > 0$}
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+			\EndIf
+			\State a
+			\State a
+			\State a
+			\State a
+			\State a
+		\EndIf
+    \end{algorithmic}
+
+	\newpage
+	\subsection{Multicolumn}
+	We here test the behavior with page breaks on local multicolumn environments.
+	\begin{multicols}{3}
+		\begin{algorithmic}[1]
+			\State first line
+			\If{$a > 0$}
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\If{$b > 0$}
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+					\State a
+				\EndIf
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+				\State a
+			\EndIf
+		\end{algorithmic}
+	\end{multicols}
+	This was a test to see how the column breaks are handled.
+\end{document}
