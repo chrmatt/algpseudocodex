@@ -1,5 +1,5 @@
 %% algpseudocodex.sty
-%% Copyright 2017, 2020-2022 Christian Matt
+%% Copyright 2017, 2020-2023 Christian Matt
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -13,7 +13,7 @@
 % 
 % The Current Maintainer of this work is Christian Matt.
 %
-% This work consists of the files algpseudocodex.sty and algpseudocodex.tex	.
+% This work consists of the files algpseudocodex.sty and algpseudocodex.tex.
 
 
 % Pseudocodex algorithmic style
@@ -27,6 +27,7 @@
 \RequirePackage{fifo-stack}
 \RequirePackage{varwidth}
 \RequirePackage{tabto}
+\RequirePackage{totcount}
 \RequirePackage{tikz}
 \usetikzlibrary{calc,fit,tikzmark}
 
@@ -77,25 +78,37 @@
 \newlength{\algpx@codeBoxInnerSep}% distance between box and its content
 \newlength{\algpx@codeBoxSep}% distance between nested boxes
 \newlength{\algpx@codeBoxOuterSep}% additional space before and after box
+
+% the following lengths related to indent lines are set when opening an algorithmic environment to reflect to current font size
+\newlength{\algpx@indShiftX}% indent line shifted right by that amount from beginning of line
+\newlength{\algpx@indStartShiftY}% start of indent line shifted up by that amount from beginning of line
+\newlength{\algpx@indEndShiftY}% end of indent line shifted up by that amount from beginning of line (only if noEnd=false, otherwise no shift)
+\newlength{\algpx@indXLineLength}% length of horizonal line drawn at end when noEnd=true
 \newlength{\algpx@minIndDist}% minimum distance between start and end of indent line to draw line
 \newlength{\algpx@oldPos}
 \newlength{\algpx@newPos}
 \newlength{\algpx@tmpLen}% length to be used for various things
-\newlength{\algpx@tmpLenA}% another tmp length
 \newlength{\algpx@indStartY}
 \newlength{\algpx@indEndY}
 \newlength{\algpx@indStartX}% x coordinate of indent line
+\newlength{\algpx@extraShiftX}% current line is shifted by this amount right
+\newlength{\algpx@minTopPageHeight}% minimum for setting height of first line on page (used, e.g., to draw indent lines on page break)
+\newlength{\algpx@minBotPageDepth}% minimum for setting depth of last line on page (used, e.g., to draw indent lines on page break)
 
 \setlength{\algpx@codeBoxInnerSep}{2pt}
 \setlength{\algpx@codeBoxSep}{3pt}
 \setlength{\algpx@codeBoxOuterSep}{1pt}
+\settoheight{\algpx@minTopPageHeight}{\footnotesize9}% account for line numbers, which use \footnotesize
+\settodepth{\algpx@minBotPageDepth}{\footnotesize9}% account for line numbers, which use \footnotesize
 
 \newbool{algpx@firstLine}
-\newbool{algpx@setNorth}
+\newbool{algpx@setNorth}% whether codeBoxNorth should be set
 \newbool{algpx@executeEndVarwidth}
 \newbool{algpx@adjustHeight}
 \newbool{algpx@restorePrevdepth}
+\newbool{algpx@hasCheckedPageBreak}% whether checkPageBreak has been executed in current environment
 \newbool{algpx@indJustEnded}% true after end with noend
+\newbool{algpx@pageJustBroken}%
 
 \newcounter{algpx@codeBoxCount}% number of already created code boxes. Used to fill algpx@startNewCodeBoxQueue
 \newcounter{algpx@nestedCBoxCount}
@@ -104,12 +117,15 @@
 \newcounter{algpx@nestedBoxedStringCount}
 \newcounter{algpx@nestedBoxedStringMaxCount}
 \newcounter{algpx@indentCount}
-\newcounter{algpx@justUsedIndentCount}
+\newcounter{algpx@lastIndentEnded}
+\newcounter{algpx@pageCount}% counter of "pages" (columns in multi column format); incremented when page break is detected
+\newcounter{algpx@tmpCount}% temporary counter
 
 \FSCreate{algpx@startNewCodeBoxQueue}{0}% queue of code boxes to be created on next \State, \If etc. Only stores index of box (0 is value of top if empty; should not be relevant)
 \FSCreate{algpx@codeBoxStack}{0}
 \FSCreate{algpx@codeBoxStackTmp}{0}
 \FSCreate{algpx@indentStack}{0}
+\FSCreate{algpx@indentStackTmp}{0}
 
 \newsavebox{\algpx@boxedStringBox}
 
@@ -132,32 +148,37 @@
 % execute before printing end if etc.
 \newcommand{\algpx@startEndBlockCommand}{%
 	% add space for indentation because of how ALG@nested is computed
-	\algpx@startCodeCommandX{}{\hspace*{\algorithmicindent}}%
+	\algpx@startCodeCommandX[1]{}{\hspace*{\algorithmicindent}}%
 }
 
 % extended version of \algpx@startCodeCommand
-% first argument is printed before content
-% second argument is used to reserve space after contents (for end symbol of long comments)
-\newcommand{\algpx@startCodeCommandX}[2]{%
+% first argument 1 if executed in \algpx@startEndBlockCommand
+% second argument is printed before content
+% third argument is used to reserve space after contents (for end symbol of long comments)
+\newcommand{\algpx@startCodeCommandX}[3][0]{%
 	\setbool{algpx@indJustEnded}{false}%
 	\setcounter{algpx@startedBoxesCount}{0}%
 	\setcounter{algpx@endedBoxesCount}{0}%
 	\setcounter{algpx@nestedBoxedStringMaxCount}{0}%
 	\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}}}{%
 		\FSPush{algpx@codeBoxStack}{\FSTop{algpx@startNewCodeBoxQueue}}%
-		\algpx@drawCodeBox{algpx@codeBoxStyle\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
+		\algpx@drawCodeBox{algpx@codeBoxStyle-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
 		\FSPop{algpx@startNewCodeBoxQueue}%
 		\setbool{algpx@setNorth}{true}%
 		\stepcounter{algpx@startedBoxesCount}%
 	}%
 	\algpx@setCodeBoxWest%
+	% check for page break only if indent line is open because page breaks are only used for this
+	\ifboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@indentStack}}}}{%
+		\algpx@checkPageBreak[#1]%
+	}{}%
 	\setbool{algpx@firstLine}{false}%
 	\setbool{algpx@executeEndVarwidth}{true}%
-	#1%
-	% create box from here to end of line, leaving space for #2
-	\settowidth{\algpx@tmpLen}{#1}%
-	\settowidth{\algpx@tmpLenA}{#2}%
-	\begin{varwidth}[t]{\dimexpr \linewidth - \algpx@tmpLen - \algpx@tmpLenA - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
+	#2%
+	% create box from here to end of line, leaving space for #3
+	\settowidth{\algpx@extraShiftX}{#2}% remember that line actually starts further right than last box
+	\settowidth{\algpx@tmpLen}{#3}%
+	\begin{varwidth}[t]{\dimexpr \linewidth - \algpx@extraShiftX - \algpx@tmpLen - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
 }
 
 % executed before \State, \If etc., i.e., at end of previous line
@@ -176,6 +197,11 @@
 		\setbool{algpx@setNorth}{false}%
 	}{}%
 	\algpx@setCodeBoxEast%
+	% remember position of ending line and possibly set north of page
+	% not necessary if no indent lines are open or just ended (because EndIf with noEnd cannot break page)
+	\ifboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@indentStack}}} and not bool{algpx@indJustEnded}}{%
+		\algpx@setLineEndPos%
+	}{}%
 	\ifbool{algpx@adjustHeight}{%
 		% todo: if highest or deepest element in current line is BoxedString, \ht0 or \dp0 should be adjusted for different sep values
 		\algpx@addBoxSpacing{\value{algpx@startedBoxesCount}}{\the\ht0}{\value{algpx@endedBoxesCount}}{\the\dp0}%
@@ -185,6 +211,66 @@
 		\par\prevdepth\algpx@pdtemp%
 		\setbool{algpx@restorePrevdepth}{false}%
 	}{}%
+}
+
+% Checks whether current line starts on new page (or column) by comparing y position with previous line.
+% If so, draws indent lines neither starting nor ending on this page.
+% Optional argument is 1 if executed on end block with noEnd=false.
+%
+% Note: We do not rely on \iftikzmarkonpage because, e.g., in double-column format, lines can be on the same page,
+% but we want to consider them to be on different pages.
+\newcommand{\algpx@checkPageBreak}[1][0]{%
+	\ifbool{algpx@hasCheckedPageBreak}{% first line of code cannot be on new page
+		% extract y positions of previous line
+		\tikz[overlay,remember picture]{%
+			\pgfextracty{\algpx@oldPos}{\pgfpointanchor{algpx@currentStartYPos}{center}}%
+			\global\algpx@oldPos=\algpx@oldPos%
+		}%
+		% current pos is 0, so if last pos is less than that, we are on new page
+		\ifdimcomp{\algpx@oldPos}{<}{0ex}{%
+			% set south of previous page to y pos last saved in \algpx@setLineEndPos
+			\tikz[overlay,remember picture]{%
+				\tikzmark{algpx@pageSouth-\thealgpx@pageCount}{(algpx@currentEndYPos)}%
+			}%
+			\stepcounter{algpx@pageCount}%
+			\setbool{algpx@pageJustBroken}{true}%
+			% all currently open indent lines have started on earlier page.
+			% Draw full line from top to bottom for all of those not ending on this page either
+			\algpx@drawIndentLinesOnPageBreak[#1]%
+		}{%
+			\tikz[overlay,remember picture]{}% dummy to keep in sync
+			\tikz[overlay,remember picture]{}% dummy to keep in sync (inside drawIndentLinesOnPageBreak)
+		}%
+	}{}%
+	\@tikzmarkNow{algpx@currentStartYPos}% save y position of current line to compare next time
+	\setbool{algpx@hasCheckedPageBreak}{true}%
+}
+
+% Remember current position as south of page and set north of current page if page was just broken.
+\newcommand{\algpx@setLineEndPos}{%
+	% save y position of current line shifted down the depth of current line to later use for pageSouth coordinate in \algpx@checkPageBreak
+	% shift down at least by \algpx@minBotPageDepth
+	\ifdimcomp{\the\dp0}{<}{\algpx@minBotPageDepth}{%
+		\@tikzmarkNow[yshift=-\algpx@minBotPageDepth]{algpx@currentEndYPos}%
+	}{%
+		\@tikzmarkNow[yshift=-\the\dp0]{algpx@currentEndYPos}%
+	}%
+	% right after pagebreak, set north of current page
+	\ifbool{algpx@pageJustBroken}{%
+		% shift to beginning of line and also shift up by height of current line, but last least \algpx@minTopPageHeight
+		% also shift to left by \wd0 (width of last box, i.e., of line in varwidth) + \algpx@extraShiftX to get x position at beginning of line
+		\tikz[overlay,remember picture]{%
+			\ifdimcomp{\the\ht0}{<}{\algpx@minTopPageHeight}{%
+				\coordinate (algpx@pageNorth) at (-\wd0 - \algpx@extraShiftX,\algpx@minTopPageHeight);%
+			}{%
+				\coordinate (algpx@pageNorth) at (-\wd0 - \algpx@extraShiftX,\the\ht0);%
+			}%
+			\tikzmark{algpx@pageNorth-\thealgpx@pageCount}{(algpx@pageNorth)}%
+		}%
+		\setbool{algpx@pageJustBroken}{false}%
+	}{%
+		\tikz[overlay,remember picture]{}% dummy to keep in sync
+	}%
 }
 
 % set algpx@codeBoxNorthMax of current box and all ancestors; argument is amount to shift up from current baseline
@@ -358,7 +444,7 @@
 	%globally set tikz style (https://tex.stackexchange.com/a/47918)
 	\begingroup%
 		\globaldefs=1\relax%
-		\pgfqkeys{/tikz}{algpx@codeBoxStyle\thealgpx@codeBoxCount/.style={#1}}%
+		\pgfqkeys{/tikz}{algpx@codeBoxStyle-\thealgpx@codeBoxCount/.style={#1}}%
 	\endgroup%
 	\stepcounter{algpx@codeBoxCount}%
 	\ignorespaces%
@@ -448,48 +534,57 @@
 % start indented block
 \newcommand{\algpx@startIndent}{%
 	\ifbool{algpx@indLines}{%
-		\@tikzmarkNow{algpx@indentStart-\thealgpx@indentCount}%
+		% Define counter for the page on which this indent line ends.
+		% The use of totcount ensures the last value is preserved during compilations and thus can be used before setting it.
+		% expansion is needed because name contains variable, see
+		% https://tex.stackexchange.com/questions/517559/why-cant-the-name-of-a-totcounter-be-defined-with-a-variable
+		\expanded{\noexpand\newtotcounter{algpx@indentEndPage-\thealgpx@indentCount}}%
+		% set start coordinate here and draw indent line
+		% Note: Draw already here because endIndent could already be called on next page if end is at last line of page.
+		\tikz[overlay,remember picture]{%
+			\coordinate (startPos) at (\algpx@indShiftX,\algpx@indStartShiftY);
+			\algpx@drawIndentLine{\thealgpx@indentCount}{startPos}%
+		}%
 		\FSPush{algpx@indentStack}{\thealgpx@indentCount}%
 		\stepcounter{algpx@indentCount}%
 	}{}%
 }
 
-% end of indented block; optional argument 1 means that only interrupted by else, 2 means ended with until
+% end of indented block
+% optional argument 1 means that only interrupted by else, 2 means ended with until
 \newcommand{\algpx@endIndent}[1][0]{%
 	\ifbool{algpx@indLines}{%
-		\ifboolexpr{bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
-			\setlength{\algpx@minIndDist}{1ex}% set mininum drawing distance to 1ex if ending without text
-		}{% otherwise, factor in additional line for end, else, or until
-			\setlength{\algpx@minIndDist}{\dimexpr \baselineskip + 1ex \relax}%
-		}%
-		\@tikzmarkNow{algpx@indentEnd-\FSTop{algpx@indentStack}}%
+		% remember on which page indent line ends (remembered through compiliations because we use totcount)
+		\setcounter{algpx@indentEndPage-\FSTop{algpx@indentStack}}{\value{algpx@pageCount}}%
 		\tikz[overlay,remember picture]{%
-			\pgfextractx{\algpx@indStartX}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
 			\ifboolexpr{bool{algpx@indJustEnded} and test{\ifstrequal{#1}{0}}}{%
-				% use same coordinates as for previous end
-				\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEnd-\thealgpx@justUsedIndentCount}{center}}%
-				\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(\algpx@indStartX,\algpx@indEndY)+(0.12em,0ex)$) -- +(0.5em,0);%
+				% if another line has just ended, use same coordinates as for previous end
+				% to this end, remember index of previous end to use
+				\expanded{\noexpand\newtotcounter{algpx@indentEndCoordIndex-\FSTop{algpx@indentStack}}}%
+				\setcounter{algpx@indentEndCoordIndex-\FSTop{algpx@indentStack}}{\thealgpx@lastIndentEnded}%
 			}{%
-				% only draw if at least one line between start and end
-				\pgfextracty{\algpx@indStartY}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
-				\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEnd-\FSTop{algpx@indentStack}}{center}}%
-				\ifdimcomp{\algpx@indStartY-\algpx@minIndDist}{>}{\algpx@indEndY}{%
-					\ifboolexpr{bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
-						% x of end is at end of line, extract x of start and use that instead
-						\pgfextractx{\algpx@indStartX}{\pgfpointanchor{algpx@indentStart-\FSTop{algpx@indentStack}}{center}}%
-						% draw additional line to right if noend and line is not interrupted
-						\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(\algpx@indStartX,\algpx@indEndY)+(0.12em,0ex)$) -- +(0.5em,0);%
-					}{%
-						\draw[algpxIndentLine] ($(algpx@indentStart-\FSTop{algpx@indentStack})+(0.12em,-0.8ex)$) -- ($(algpx@indentEnd-\FSTop{algpx@indentStack})+(0.12em,2.0ex)$);%
-					}%
-				}{}%
+				% if not just ended, use current position (0,0) as end
+				\ifboolexpr{bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
+					% Draw additional line to right if noend and line is not interrupted and move down by current line depth.
+					% Note: we are now at the end of the line, so the x position is too far right.
+					% We solve this in \algpx@drawIndentLine by going at most \algpx@indShiftX to the right.
+					% Adjusting here would require access to the start position and thus an additional compilation.
+					\coordinate (algpx@indentEndCoord) at (\algpx@indShiftX+\algpx@indXLineLength,-\the\dp0);%
+				}{%
+					% if using end or interrupted by else etc., use current position shifted by default values
+					\coordinate (algpx@indentEndCoord) at (\algpx@indShiftX,\algpx@indEndShiftY);%
+				}%
+				% remember end position using \tikzmark so it can be accessed by \algpx@startIndent before
+				\tikzmark{algpx@indentEnd-\FSTop{algpx@indentStack}}{(algpx@indentEndCoord)}%
 			}%
 		}%
 	}{}%
 	% set indJustEnded even if indLines are not drawn; also used for EndBox
 	\ifboolexpr{not bool{algpx@indJustEnded} and bool{algpx@noEnd} and test{\ifstrequal{#1}{0}}}{%
 		\setbool{algpx@indJustEnded}{true}%
-		\setcounter{algpx@justUsedIndentCount}{\FSTop{algpx@indentStack}}%
+		\ifbool{algpx@indLines}{%
+			\setcounter{algpx@lastIndentEnded}{\FSTop{algpx@indentStack}}%
+		}{}%
 	}{}%
 	\ifbool{algpx@indLines}{%
 		\FSPop{algpx@indentStack}%
@@ -497,6 +592,62 @@
 			\algpx@startIndent% start new line if only interrupted
 		}{}%
 	}{}%
+}
+
+% Draw indent line with index #1 and start coordinate (#2).
+% To be called inside a TikZ picture.
+\newcommand{\algpx@drawIndentLine}[2]{%
+	\ifnumcomp{\totvalue{algpx@indentEndPage-#1}}{>}{\value{algpx@pageCount}}{%
+		% if indentation does not end on the same page, draw line to end of page with x position of start
+		\coordinate (algpx@indentEndCoord) at (#2 |- {pic cs:algpx@pageSouth-\thealgpx@pageCount});%
+	}{%
+		% otherwise, indentation ends on same page
+		\@ifundefined{c@algpx@indentEndCoordIndex-#1@totc}{%
+			% if no indentEndCoordIndex is stored, just use stored end position
+			\coordinate (algpx@indentEndCoord) at (pic cs:algpx@indentEnd-#1);%
+		}{%
+			% if indentEndCoordIndex is defined, another line has just ended and we use the same y coordinates as for previous end
+			\coordinate (algpx@indentEndCoord) at (pic cs:algpx@indentEnd-\the\totvalue{algpx@indentEndCoordIndex-#1});%
+		}%
+	}{}%
+	% Only draw if there is minimum distance between start and end
+	\pgfextracty{\algpx@indStartY}{\pgfpointanchor{#2}{center}}%
+	\pgfextracty{\algpx@indEndY}{\pgfpointanchor{algpx@indentEndCoord}{center}}%
+	\ifdimcomp{\algpx@indStartY - \algpx@indEndY}{>}{\algpx@minIndDist}{%
+		% draw in straight lines from start position (#2) to end coordinate, but with x position at most start + \algpx@indXLineLength since end position is set at end of line in \algpx@endIndent
+		\draw[algpxIndentLine] let \p1=(#2), \p2=(algpx@indentEndCoord) in (#2) |- ({min(\x2, \x1 + \algpx@indXLineLength)}, \y2);%
+	}{}%
+}
+
+% For all open indent lines not ending on current page, draw from top to bottom of page
+% Optional argument is 1 if executed on end block with noEnd=false.
+\newcommand{\algpx@drawIndentLinesOnPageBreak}[1][0]{%
+	\tikz[overlay,remember picture]{%
+		% iterate over all open indent lines
+		\ifstrequal{#1}{0}{%
+			\setcounter{algpx@tmpCount}{0}% tmp counter to count interations
+		}{%
+			% if ending block here, the last indentation has already ended and line won't be drawn
+			% start counting at -1 to get correct indentation of later ending lines.
+			\setcounter{algpx@tmpCount}{-1}%
+		}%
+		\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@indentStack}}}}{%
+			\FSPush{algpx@indentStackTmp}{\FSTop{algpx@indentStack}}% copy stack to tmp	
+			\stepcounter{algpx@tmpCount}%
+			% draw line to bottom of page
+			% set beginning of line to north of page (with x set to beginning of line, see \algpx@checkPageBreak)
+			% shifted by the number indentations
+			\coordinate (startPos) at ($(pic cs:algpx@pageNorth-\thealgpx@pageCount) - (\dimexpr \algorithmicindent * \value{algpx@tmpCount} - \algpx@indShiftX \relax, 0ex)$);%
+			\algpx@drawIndentLine{\FSTop{algpx@indentStack}}{startPos}%
+			% finally remove top element
+			\FSPop{algpx@indentStack}%
+		}%
+		% restore stack from tmp
+		\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@indentStackTmp}}}}{%
+			\FSPush{algpx@indentStack}{\FSTop{algpx@indentStackTmp}}%
+			\FSPop{algpx@indentStackTmp}%
+		}%
+	}%
 }
 
 
@@ -527,48 +678,48 @@
 % Loops, conditional statements, and functions
 %
 \algdef{SE}[WHILE]{While}{EndWhile}[1]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicwhile\ #1\ \algorithmicdo%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicwhile\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicwhile%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicwhile%
 }
 \algdef{SE}[FOR]{For}{EndFor}[1]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicfor\ #1\ \algorithmicdo%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicfor\ #1\ \algorithmicdo%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicfor%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicfor%
 }
 \algdef{S}[FOR]{ForAll}[1]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicforall\ #1\ \algorithmicdo%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicforall\ #1\ \algorithmicdo%
 }
 \algdef{SE}[LOOP]{Loop}{EndLoop}{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicloop%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicloop%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicloop%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicloop%
 }
 \algdef{SE}[REPEAT]{Repeat}{Until}{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicrepeat%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicrepeat%
 }[1]{%
-	\algpx@endIndent[2]\algpx@startEndBlockCommand\algorithmicuntil\ #1%
+	\algpx@startEndBlockCommand\algpx@endIndent[2]\algorithmicuntil\ #1%
 }
 \algdef{SE}[IF]{If}{EndIf}[1]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicif\ #1\ \algorithmicthen%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicif\ #1\ \algorithmicthen%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicif%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicif%
 }
 \algdef{C}[IF]{IF}{ElsIf}[1]{%
-	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse\ \algorithmicif\ #1\ \algorithmicthen%
+	\algpx@startCodeCommand\algpx@endIndent[1]\algorithmicelse\ \algorithmicif\ #1\ \algorithmicthen%
 }
 \algdef{Ce}[ELSE]{IF}{Else}{EndIf}{%
-	\algpx@endIndent[1]\algpx@startCodeCommand\algorithmicelse%
+	\algpx@startCodeCommand\algpx@endIndent[1]\algorithmicelse%
 }
 \algdef{SE}[PROCEDURE]{Procedure}{EndProcedure}[2]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicprocedure\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicprocedure\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicprocedure%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicprocedure%
 }
 \algdef{SE}[FUNCTION]{Function}{EndFunction}[2]{%
-	\algpx@startIndent\algpx@startCodeCommand\algorithmicfunction\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicfunction\ \textproc{#1}\ifstrempty{#2}{}{(#2)}%
 }{%
-	\algpx@endIndent\algpx@startEndBlockCommand\algorithmicend\ \algorithmicfunction%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicfunction%
 }
 
 \ifbool{algpx@noEnd}{%
@@ -579,13 +730,13 @@
 	\algtext*{EndProcedure}%
 	\algtext*{EndFunction}%
 	%
-	% end indent line after (not before), to get correct y position for multiline text in last command
-	\apptocmd{\EndWhile}{\algpx@endIndent}{}{}%
-	\apptocmd{\EndFor}{\algpx@endIndent}{}{}%
-	\apptocmd{\EndLoop}{\algpx@endIndent}{}{}%
-	\apptocmd{\EndIf}{\algpx@endIndent}{}{}%
-	\apptocmd{\EndProcedure}{\algpx@endIndent}{}{}%
-	\apptocmd{\EndFunction}{\algpx@endIndent}{}{}%
+	% end indent line before end command
+	\pretocmd{\EndWhile}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndFor}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndLoop}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndIf}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndProcedure}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
 }{}%
 
 % execute \algpx@endCodeCommand before \State, \If etc.
@@ -633,7 +784,7 @@
 	\item[%
 		\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@startNewCodeBoxQueue}}}}{%
 			\FSPush{algpx@codeBoxStack}{\FSTop{algpx@startNewCodeBoxQueue}}%
-			\algpx@drawCodeBox{algpx@codeBoxStyle\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
+			\algpx@drawCodeBox{algpx@codeBoxStyle-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxNorth-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxWest-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxEast-\FSTop{algpx@startNewCodeBoxQueue}}{algpx@codeBoxSouth-\FSTop{algpx@startNewCodeBoxQueue}}%
 			\FSPop{algpx@startNewCodeBoxQueue}%
 			\stepcounter{algpx@startedBoxesCount}%
 		}%
@@ -728,8 +879,17 @@
 	\setbool{algpx@executeEndVarwidth}{false}%
 	\setbool{algpx@adjustHeight}{false}%
 	\setbool{algpx@restorePrevdepth}{false}%
+	\setbool{algpx@hasCheckedPageBreak}{false}%
+	\setbool{algpx@pageJustBroken}{false}%
 	\setcounter{algpx@startedBoxesCount}{0}%
 	\setcounter{algpx@endedBoxesCount}{0}%
+	%
+	% Set lengths here to use correct font sizes
+	\setlength{\algpx@indShiftX}{0.12em}%
+	\setlength{\algpx@indStartShiftY}{-0.8ex}%
+	\setlength{\algpx@indEndShiftY}{2.0ex}%
+	\setlength{\algpx@indXLineLength}{0.5em}%
+	\setlength{\algpx@minIndDist}{0.7ex}%
 }
 
 \AtEndEnvironment{algorithmic}{%
