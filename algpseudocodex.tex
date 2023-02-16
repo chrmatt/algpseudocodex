@@ -1,5 +1,5 @@
 %% algpseudocodex.tex
-%% Copyright 2020-2022 Christian Matt
+%% Copyright 2020-2023 Christian Matt
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -29,7 +29,7 @@
 
 \title{\bf{Algpseudocodex Package Documentation}}
 \author{Christian Matt \\ \url{https://github.com/chrmatt/algpseudocodex}}
-\date{\today\\v1.0.2}
+\date{\today\\v1.1.0}
 
 \begin{document}
 
@@ -384,11 +384,18 @@ If \verb|false|, the end of blocks are marked with the expression ``end'' follow
 \begin{minipage}[t]{0.45\textwidth}
 	\verb|noEnd=false|:
 	\begin{algorithmic}
+		% redefine if commands here to handle noEnd = false
 		\makeatletter
 		\setbool{algpx@noEnd}{false}%
-		\algtext{EndIf}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicif%
-			\algpx@startIndent% \EndIf ends another indent. Start fake one here to handle that.
+		\let\If\undefined%
+		\let\EndIf\undefined%
+		\algdef{SE}[IF]{If}{EndIf}[1]{%
+			\algpx@startCodeCommand\algpx@startIndent\algorithmicif\ #1\ \algorithmicthen%
+		}{%
+			\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicif%
 		}
+		\pretocmd{\If}{\algpx@endCodeCommand}{}{}%
+		\pretocmd{\EndIf}{\algpx@endCodeCommand[0]}{}{}%
 		\makeatother
 		\If{$x > 0$}
 			\State $x \gets x - 1$
@@ -680,6 +687,11 @@ The following keywords can be customized:
 \end{itemize}
 
 \section{Revision History}
+
+\subsection*{v1.1.0 (2023-02-17)}
+\begin{itemize}
+	\item Added support for indent guide lines spanning multiple pages.
+\end{itemize}
 
 \subsection*{v1.0.2 (2022-10-07)}
 \begin{itemize}
