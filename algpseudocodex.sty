@@ -20,7 +20,7 @@
 % Based on Szasz Janos' algpseudocode.sty
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{algpseudocodex}[2023-02-17 v1.1.0 pseudocode typesetting]
+\ProvidesPackage{algpseudocodex}[2023-04-16 v1.1.1 pseudocode typesetting]
 \RequirePackage{kvoptions}
 \RequirePackage{algorithmicx}
 \RequirePackage{etoolbox}
@@ -88,6 +88,7 @@
 \newlength{\algpx@oldPos}
 \newlength{\algpx@newPos}
 \newlength{\algpx@tmpLen}% length to be used for various things
+\newlength{\algpx@currentLineskip}% used to restore lineskip in varwidth
 \newlength{\algpx@indStartY}
 \newlength{\algpx@indEndY}
 \newlength{\algpx@indStartX}% x coordinate of indent line
@@ -178,7 +179,9 @@
 	% create box from here to end of line, leaving space for #3
 	\settowidth{\algpx@extraShiftX}{#2}% remember that line actually starts further right than last box
 	\settowidth{\algpx@tmpLen}{#3}%
+	\setlength{\algpx@currentLineskip}{\lineskip}% remember value of lineskip
 	\begin{varwidth}[t]{\dimexpr \linewidth - \algpx@extraShiftX - \algpx@tmpLen - \algorithmicindent * \numexpr \value{ALG@nested} - 1 \relax \relax}%
+	\setlength{\lineskip}{\algpx@currentLineskip}% rstore lineskip value
 }
 
 % executed before \State, \If etc., i.e., at end of previous line
@@ -798,7 +801,9 @@
 	\algpx@setCodeBoxWest[\dimexpr \labelsep + \algpx@tmpLen \relax]%
 	\setbool{algpx@firstLine}{false}%
 	\setbool{algpx@executeEndVarwidth}{true}%
+	\setlength{\algpx@currentLineskip}{\lineskip}% remember value of lineskip
 	\begin{varwidth}[t]{\dimexpr \linewidth - \labelsep - \algpx@tmpLen + \leftmargin \relax}%
+	\setlength{\lineskip}{\algpx@currentLineskip}% rstore lineskip value
 	\settoheight{\algpx@tmpLen}{#1}%
 	\rule{0pt}{\algpx@tmpLen}%
 }
