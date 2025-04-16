@@ -1,5 +1,5 @@
 %% algpseudocodex.sty
-%% Copyright 2017, 2020-2023 Christian Matt
+%% Copyright 2017, 2020-2023, 2025 Christian Matt
 %
 % This work may be distributed and/or modified under the
 % conditions of the LaTeX Project Public License, either version 1.3c
@@ -20,7 +20,7 @@
 % Based on Szasz Janos' algpseudocode.sty
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{algpseudocodex}[2023-04-17 v1.1.2 pseudocode typesetting]
+\ProvidesPackage{algpseudocodex}[2025-04-16 v1.2.0 pseudocode typesetting]
 \RequirePackage{kvoptions}
 \RequirePackage{algorithmicx}
 \RequirePackage{etoolbox}
@@ -742,14 +742,14 @@
 	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicclass%
 }
 \algdef{SE}[PROPERTIES]{Properties}{EndProperties}{%
-  \algpx@startCodeCommand\algpx@startIndent\algorithmicproperties%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicproperties%
 }{%
-  \algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicproperties%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicproperties%
 }
 \algdef{SE}[METHODS]{Methods}{EndMethods}{%
-  \algpx@startCodeCommand\algpx@startIndent\algorithmicmethods%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicmethods%
 }{%
-  \algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicmethods%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicmethods%
 }
 
 \ifbool{algpx@noEnd}{%
@@ -759,10 +759,10 @@
 	\algtext*{EndIf}%
 	\algtext*{EndProcedure}%
 	\algtext*{EndFunction}%
-  \algtext*{EndStructure}%
-  \algtext*{EndClass}%
-  \algtext*{EndProperties}%
-  \algtext*{EndMethods}%
+	\algtext*{EndStructure}%
+	\algtext*{EndClass}%
+	\algtext*{EndProperties}%
+	\algtext*{EndMethods}%
 	%
 	% end indent line before end command
 	\pretocmd{\EndWhile}{\algpx@endIndent}{}{}%
@@ -771,10 +771,10 @@
 	\pretocmd{\EndIf}{\algpx@endIndent}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endIndent}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
-  \pretocmd{\EndStructure}{\algpx@endIndent}{}{}%
-  \pretocmd{\EndClass}{\algpx@endIndent}{}{}%
-  \pretocmd{\EndProperties}{\algpx@endIndent}{}{}%
-  \pretocmd{\EndMethods}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndStructure}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndClass}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndProperties}{\algpx@endIndent}{}{}%
+	\pretocmd{\EndMethods}{\algpx@endIndent}{}{}%
 }{}%
 
 % execute \algpx@endCodeCommand before \State, \If etc.
@@ -803,10 +803,10 @@
 	\pretocmd{\EndIf}{\algpx@endCodeCommand[1]}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[1]}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endCodeCommand[1]}{}{}%
-  \pretocmd{\EndStructure}{\algpx@endCodeCommand[1]}{}{}%
-  \pretocmd{\EndClass}{\algpx@endCodeCommand[1]}{}{}%
-  \pretocmd{\EndProperties}{\algpx@endCodeCommand[1]}{}{}%
-  \pretocmd{\EndMethods}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndStructure}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndClass}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndProperties}{\algpx@endCodeCommand[1]}{}{}%
+	\pretocmd{\EndMethods}{\algpx@endCodeCommand[1]}{}{}%
 }{%
 	\pretocmd{\EndWhile}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndFor}{\algpx@endCodeCommand[0]}{}{}%
@@ -814,10 +814,10 @@
 	\pretocmd{\EndIf}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endCodeCommand[0]}{}{}%
-  \pretocmd{\EndStructure}{\algpx@endCodeCommand[0]}{}{}%
-  \pretocmd{\EndClass}{\algpx@endCodeCommand[0]}{}{}%
-  \pretocmd{\EndProperties}{\algpx@endCodeCommand[0]}{}{}%
-  \pretocmd{\EndMethods}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndStructure}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndClass}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndProperties}{\algpx@endCodeCommand[0]}{}{}%
+	\pretocmd{\EndMethods}{\algpx@endCodeCommand[0]}{}{}%
 }%
 
 % execute \algpx@startCodeCommand after \State (this is done for loops etc. inside the definitions above)
