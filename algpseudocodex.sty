@@ -10,7 +10,7 @@
 % version 2008-05-04 or later.
 %
 % This work has the LPPL maintenance status `maintained'.
-% 
+%
 % The Current Maintainer of this work is Christian Matt.
 %
 % This work consists of the files algpseudocodex.sty and algpseudocodex.tex.
@@ -445,7 +445,7 @@
 % Must be followed by \State, \If, \For etc.
 % (optional) argument is style of box
 \newcommand{\BeginBox}[1][algpxDefaultBox]{%
-	\ignorespaces%	
+	\ignorespaces%
 	\FSUnshift{algpx@startNewCodeBoxQueue}{\thealgpx@codeBoxCount}% add to queue; processed by \algpx@startCodeCommand
 	%globally set tikz style (https://tex.stackexchange.com/a/47918)
 	\begingroup%
@@ -638,7 +638,7 @@
 			\setcounter{algpx@tmpCount}{-1}%
 		}%
 		\whileboolexpr{test{\ifnumcomp{0}{<}{\FSSize{algpx@indentStack}}}}{%
-			\FSPush{algpx@indentStackTmp}{\FSTop{algpx@indentStack}}% copy stack to tmp	
+			\FSPush{algpx@indentStackTmp}{\FSTop{algpx@indentStack}}% copy stack to tmp
 			\stepcounter{algpx@tmpCount}%
 			% draw line to bottom of page
 			% set beginning of line to north of page (with x set to beginning of line, see \algpx@checkPageBreak)
@@ -677,6 +677,10 @@
 \algnewcommand\algorithmicensure{\textbf{Ensure:}}
 \algnewcommand\algorithmicreturn{\textbf{return}}
 \algnewcommand\algorithmicoutput{\textbf{output}}
+\algnewcommand\algorithmicstructure{\textbf{structure}}
+\algnewcommand\algorithmicclass{\textbf{class}}
+\algnewcommand\algorithmicproperties{\textbf{properties}}
+\algnewcommand\algorithmicmethods{\textbf{methods}}
 \algnewcommand\textproc{\textsc}
 
 
@@ -727,6 +731,26 @@
 }{%
 	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicfunction%
 }
+\algdef{SE}[STRUCTURE]{Structure}{EndStructure}[1]{%
+  \algpx@startCodeCommand\algpx@startIndent\algorithmicstructure\ \textsc{#1}%
+}{%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicstructure%
+}
+\algdef{SE}[CLASS]{Class}{EndClass}[1]{%
+  \algpx@startCodeCommand\algpx@startIndent\algorithmicclass\ \textsc{#1}%
+}{%
+	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicclass%
+}
+\algdef{SE}[PROPERTIES]{Properties}{EndProperties}{%
+  \algpx@startCodeCommand\algpx@startIndent\algorithmicproperties%
+}{%
+  \algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicproperties%
+}
+\algdef{SE}[METHODS]{Methods}{EndMethods}{%
+  \algpx@startCodeCommand\algpx@startIndent\algorithmicmethods%
+}{%
+  \algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicmethods%
+}
 
 \ifbool{algpx@noEnd}{%
 	\algtext*{EndWhile}%
@@ -735,6 +759,10 @@
 	\algtext*{EndIf}%
 	\algtext*{EndProcedure}%
 	\algtext*{EndFunction}%
+  \algtext*{EndStructure}%
+  \algtext*{EndClass}%
+  \algtext*{EndProperties}%
+  \algtext*{EndMethods}%
 	%
 	% end indent line before end command
 	\pretocmd{\EndWhile}{\algpx@endIndent}{}{}%
@@ -743,6 +771,10 @@
 	\pretocmd{\EndIf}{\algpx@endIndent}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endIndent}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endIndent}{}{}%
+  \pretocmd{\EndStructure}{\algpx@endIndent}{}{}%
+  \pretocmd{\EndClass}{\algpx@endIndent}{}{}%
+  \pretocmd{\EndProperties}{\algpx@endIndent}{}{}%
+  \pretocmd{\EndMethods}{\algpx@endIndent}{}{}%
 }{}%
 
 % execute \algpx@endCodeCommand before \State, \If etc.
@@ -758,6 +790,10 @@
 \pretocmd{\Else}{\algpx@endCodeCommand}{}{}
 \pretocmd{\Procedure}{\algpx@endCodeCommand}{}{}
 \pretocmd{\Function}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Structure}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Class}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Properties}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Methods}{\algpx@endCodeCommand}{}{}
 
 % for end commands that may not be printed, tell endCodeCommand whether we are using noEnd
 \ifbool{algpx@noEnd}{%
@@ -767,6 +803,10 @@
 	\pretocmd{\EndIf}{\algpx@endCodeCommand[1]}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[1]}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndStructure}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndClass}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndProperties}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndMethods}{\algpx@endCodeCommand[1]}{}{}%
 }{%
 	\pretocmd{\EndWhile}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndFor}{\algpx@endCodeCommand[0]}{}{}%
@@ -774,6 +814,10 @@
 	\pretocmd{\EndIf}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndProcedure}{\algpx@endCodeCommand[0]}{}{}%
 	\pretocmd{\EndFunction}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndStructure}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndClass}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndProperties}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndMethods}{\algpx@endCodeCommand[0]}{}{}%
 }%
 
 % execute \algpx@startCodeCommand after \State (this is done for loops etc. inside the definitions above)
