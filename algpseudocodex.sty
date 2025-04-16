@@ -681,7 +681,8 @@
 \algnewcommand\algorithmicclass{\textbf{class}}
 \algnewcommand\algorithmicproperties{\textbf{properties}}
 \algnewcommand\algorithmicmethods{\textbf{methods}}
-\algnewcommand\textproc{\textsc}
+\algnewcommand\textproc{\textsc}% font for procedure/function names
+\algnewcommand\textstruc{\textsc}% font for structure and class names
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -732,12 +733,12 @@
 	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicfunction%
 }
 \algdef{SE}[STRUCTURE]{Structure}{EndStructure}[1]{%
-  \algpx@startCodeCommand\algpx@startIndent\algorithmicstructure\ \textsc{#1}%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicstructure\ \textstruc{#1}%
 }{%
 	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicstructure%
 }
 \algdef{SE}[CLASS]{Class}{EndClass}[1]{%
-  \algpx@startCodeCommand\algpx@startIndent\algorithmicclass\ \textsc{#1}%
+	\algpx@startCodeCommand\algpx@startIndent\algorithmicclass\ \textstruc{#1}%
 }{%
 	\algpx@startEndBlockCommand\algpx@endIndent\algorithmicend\ \algorithmicclass%
 }
